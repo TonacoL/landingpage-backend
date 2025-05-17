@@ -104,7 +104,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 
     // Retornar link de acesso
-    const link = `http://localhost:${PORT}/file/${fileId}.pdf`;
+    const link = `${process.env.BASE_URL}/file/${fileId}.pdf`;
     res.json({ success: true, link });
 
   } catch (err) {
