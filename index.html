@@ -68,8 +68,7 @@
       formData.append("file", fileInput.files[0]);
 
       try {
-        const res = await fetch("const res = await fetch("https://landingpage-backend-z28u.onrender.com/upload", {
-", {
+        const res = await fetch("https://landingpage-backend-z28u.onrender.com/upload", {
           method: "POST",
           body: formData
         });
@@ -77,12 +76,12 @@
         const data = await res.json();
 
         if (res.ok && data.link) {
-          responseMsg.textContent = `Upload feito com sucesso! Link do arquivo: ${data.link}`;
+          responseMsg.innerHTML = `✅ Upload feito com sucesso! <br><a href="${data.link}" target="_blank">${data.link}</a>`;
         } else {
-          responseMsg.textContent = `Erro ao enviar: ${data.error || "Resposta inesperada do servidor."}`;
+          responseMsg.textContent = `❌ Erro ao enviar: ${data.error || "Resposta inesperada do servidor."}`;
         }
       } catch (error) {
-        responseMsg.textContent = `Erro na requisição: ${error.message}`;
+        responseMsg.textContent = `❌ Erro na requisição: ${error.message}`;
       }
     });
   </script>
