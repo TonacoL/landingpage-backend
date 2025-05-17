@@ -129,7 +129,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       console.log('Arquivo é PDF, não precisa converter.');
     }
 
-    const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
+    const link = `https://landingpage-backend-z28u.onrender.com/upload${fileId}.pdf`;
     console.log('Link gerado para download:', link);
 
     res.json({ success: true, link });
