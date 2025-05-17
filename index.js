@@ -1,4 +1,3 @@
-// Importar módulos
 const express = require('express');
 const multer = require('multer');
 const dotenv = require('dotenv');
@@ -7,33 +6,40 @@ const FormData = require('form-data');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors');  // <<< Importar cors
 
-// Configurar dotenv para carregar variáveis do .env
 dotenv.config();
 
-// Criar app Express
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Usar cors para liberar requisições externas
-app.use(cors());  // <<< Middleware cors ativado
+// Verificar se a pasta uploads existe, senão cria
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  console.log('Pasta uploads não existe. Criando...');
+  fs.mkdirSync(uploadDir);
+} else {
+  console.log('Pasta uploads já existe.');
+}
 
-// Configurar multer para upload local temporário
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: uploadDir });
 
-// Middleware para JSON
 app.use(express.json());
 
-// Rota POST /upload para receber e processar o arquivo
 app.post('/upload', upload.single('file'), async (req, res) => {
+  console.log('Recebido arquivo para upload.');
+
   const file = req.file;
+  if (!file) {
+    console.log('Nenhum arquivo enviado.');
+    return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+  }
+
   const fileId = uuidv4();
   const fileExt = path.extname(file.originalname).toLowerCase();
-
-  // Permitir apenas alguns formatos
   const allowed = ['.pdf', '.docx', '.xlsx'];
+
   if (!allowed.includes(fileExt)) {
+    console.log(`Formato não permitido: ${fileExt}`);
     fs.unlinkSync(file.path);
     return res.status(400).json({ error: 'Formato não permitido' });
   }
@@ -42,7 +48,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     let finalFilePath = file.path;
 
     if (fileExt !== '.pdf') {
-      // Criar job no CloudConvert para conversão para PDF
+      console.log('Arquivo não é PDF, iniciando conversão via CloudConvert.');
+
       const cloudJob = await axios.post('https://api.cloudconvert.com/v2/jobs', {
         tasks: {
           'import-my-file': { operation: 'import/upload' },
@@ -63,29 +70,26 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         }
       });
 
-      // Pegar URL e params para upload
       const uploadTask = cloudJob.data.data.tasks.find(t => t.name === 'import-my-file');
       const uploadUrl = uploadTask.result.form.url;
       const uploadParams = uploadTask.result.form.parameters;
 
-      // Preparar form-data para enviar arquivo
       const uploadForm = new FormData();
       for (const key in uploadParams) {
         uploadForm.append(key, uploadParams[key]);
       }
       uploadForm.append('file', fs.createReadStream(file.path));
 
-      // Fazer upload para CloudConvert
       await axios.post(uploadUrl, uploadForm, {
         headers: uploadForm.getHeaders(),
       });
 
-      // Aguardar finalização do job
       let finished = false;
       let exportUrl = null;
       const jobId = cloudJob.data.data.id;
 
       while (!finished) {
+        console.log('Verificando status da conversão...');
         const statusRes = await axios.get(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
           headers: { Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}` },
         });
@@ -95,46 +99,54 @@ app.post('/upload', upload.single('file'), async (req, res) => {
           finished = true;
           const exportTask = job.tasks.find(t => t.name === 'export-my-file');
           exportUrl = exportTask.result.files[0].url;
-        }
-        else if (job.status === 'error' || job.status === 'failed') {
+          console.log('Conversão finalizada. URL do arquivo:', exportUrl);
+        } else if (job.status === 'error' || job.status === 'failed') {
           throw new Error('Erro na conversão do arquivo');
         }
 
         if (!finished) await new Promise(r => setTimeout(r, 3000));
       }
 
-      // Baixar arquivo convertido para pasta uploads
       const downloadRes = await axios.get(exportUrl, { responseType: 'stream' });
-      const outputPath = `uploads/${fileId}.pdf`;
+      const outputPath = path.join(uploadDir, `${fileId}.pdf`);
       const writer = fs.createWriteStream(outputPath);
+
       downloadRes.data.pipe(writer);
 
       await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
+        writer.on('finish', () => {
+          console.log('Arquivo convertido salvo em:', outputPath);
+          resolve();
+        });
+        writer.on('error', err => {
+          console.error('Erro ao salvar arquivo convertido:', err);
+          reject(err);
+        });
       });
 
       finalFilePath = outputPath;
+    } else {
+      console.log('Arquivo é PDF, não precisa converter.');
     }
 
-    // Responder com link público do arquivo
-    // Use seu domínio backend real aqui
     const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
+    console.log('Link gerado para download:', link);
+
     res.json({ success: true, link });
 
   } catch (err) {
-    console.error(err);
+    console.error('Erro no upload/conversão:', err);
     res.status(500).json({ error: 'Erro interno no servidor.' });
   } finally {
-    // Apagar arquivo temporário enviado
-    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+      console.log('Arquivo temporário removido:', file.path);
+    }
   }
 });
 
-// Servir arquivos estáticos da pasta uploads
-app.use('/file', express.static(path.join(__dirname, 'uploads')));
+app.use('/file', express.static(uploadDir));
 
-// Iniciar servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
