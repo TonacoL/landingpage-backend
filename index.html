@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Protegido</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #1e1e1e;
+      padding: 2em;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      width: 320px;
+    }
+    input, button {
+      margin-top: 1em;
+      padding: 0.5em;
+      width: 100%;
+      background-color: #333;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-size: 1em;
+    }
+    button:hover {
+      background-color: #555;
+      cursor: pointer;
+    }
+    #responseMsg {
+      margin-top: 1em;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Enviar e Proteger Arquivo</h1>
+    <form id="uploadForm">
+      <input type="file" id="fileInput" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx" required />
+      <button type="submit">Enviar e Proteger</button>
+    </form>
+    <p id="responseMsg"></p>
+  </div>
+
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById("fileInput");
+      const responseMsg = document.getElementById("responseMsg");
+      
+      if (!fileInput.files.length) {
+        responseMsg.textContent = "Por favor, selecione um arquivo.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      try {
+        const res = await fetch("https://landingpage-backend-z28u.onrender.com/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.link) {
+          responseMsg.textContent = `Upload feito com sucesso! Link do arquivo: ${data.link}`;
+        } else {
+          responseMsg.textContent = `Erro ao enviar: ${data.error || "Resposta inesperada do servidor."}`;
+        }
+      } catch (error) {
+        responseMsg.textContent = `Erro na requisição: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
