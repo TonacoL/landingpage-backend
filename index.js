@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const { PDFDocument, rgb, degrees } = require('pdf-lib');
 
 dotenv.config();
 
@@ -23,6 +24,32 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const upload = multer({ dest: uploadDir });
+
+// Função para adicionar marca d'água
+async function addWatermark(pdfPath) {
+  const existingPdfBytes = fs.readFileSync(pdfPath);
+  const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+  const pages = pdfDoc.getPages();
+
+  for (const page of pages) {
+    const { width, height } = page.getSize();
+    const fontSize = 60;
+    const text = 'LN Educacional';
+
+    page.drawText(text, {
+      x: width / 2 - fontSize * 2.5,
+      y: height / 2,
+      size: fontSize,
+      color: rgb(0.75, 0.75, 0.75),
+      rotate: degrees(-45),
+      opacity: 0.15,
+    });
+  }
+
+  const pdfBytes = await pdfDoc.save();
+  fs.writeFileSync(pdfPath, pdfBytes);
+}
 
 app.post('/upload', upload.single('file'), async (req, res) => {
   console.log('Recebido arquivo para upload.');
@@ -126,11 +153,13 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       finalFilePath = outputPath;
     } else {
       console.log('Arquivo é PDF, não precisa converter.');
-      // Renomear o PDF enviado para padronizar nome e permitir acesso posterior
       const outputPath = path.join(uploadDir, `${fileId}.pdf`);
       fs.renameSync(file.path, outputPath);
       finalFilePath = outputPath;
     }
+
+    // Adiciona a marca d'água antes de responder
+    await addWatermark(finalFilePath);
 
     const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
     console.log('Link gerado para download:', link);
