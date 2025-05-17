@@ -7,6 +7,7 @@ const FormData = require('form-data');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors');  // <<< Importar cors
 
 // Configurar dotenv para carregar variáveis do .env
 dotenv.config();
@@ -14,6 +15,9 @@ dotenv.config();
 // Criar app Express
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Usar cors para liberar requisições externas
+app.use(cors());  // <<< Middleware cors ativado
 
 // Configurar multer para upload local temporário
 const upload = multer({ dest: 'uploads/' });
@@ -114,7 +118,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 
     // Responder com link público do arquivo
-    // Aqui você deve substituir pelo domínio público real do seu backend
+    // Use seu domínio backend real aqui
     const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
     res.json({ success: true, link });
 
