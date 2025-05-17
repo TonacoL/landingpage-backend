@@ -6,24 +6,23 @@ const FormData = require('form-data');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors');
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Verificar se a pasta uploads existe, senão cria
+app.use(cors({ origin: '*' }));
+app.use(express.json());
+
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   console.log('Pasta uploads não existe. Criando...');
   fs.mkdirSync(uploadDir);
-} else {
-  console.log('Pasta uploads já existe.');
 }
 
 const upload = multer({ dest: uploadDir });
-
-app.use(express.json());
 
 app.post('/upload', upload.single('file'), async (req, res) => {
   console.log('Recebido arquivo para upload.');
@@ -129,7 +128,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       console.log('Arquivo é PDF, não precisa converter.');
     }
 
-    const link = `ttps://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
+    const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
     console.log('Link gerado para download:', link);
 
     res.json({ success: true, link });
