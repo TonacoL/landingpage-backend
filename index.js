@@ -5,6 +5,7 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const FormData = require('form-data'); // Import necessário para FormData no Node.js
 
 dotenv.config();
 
@@ -103,7 +104,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       finalFilePath = outputPath;
     }
 
-    // Retornar link de acesso
+    // Retornar link de acesso usando URL pública do backend
     const link = `${process.env.BASE_URL}/file/${fileId}.pdf`;
     res.json({ success: true, link });
 
@@ -115,7 +116,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// Servir arquivos
+// Servir arquivos estáticos da pasta uploads
 app.use('/file', express.static(path.join(__dirname, 'uploads')));
 
 app.listen(PORT, () => {
