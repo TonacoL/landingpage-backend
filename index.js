@@ -43,9 +43,10 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     return res.status(400).json({ error: 'Formato não permitido' });
   }
 
-  try {
-    let finalFilePath = file.path;
+  let exportUrl = null;
+  let finalFilePath = file.path;
 
+  try {
     if (fileExt !== '.pdf') {
       console.log('Arquivo não é PDF, iniciando conversão via CloudConvert.');
 
@@ -84,7 +85,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       });
 
       let finished = false;
-      let exportUrl = null;
       const jobId = cloudJob.data.data.id;
 
       while (!finished) {
@@ -126,9 +126,13 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       finalFilePath = outputPath;
     } else {
       console.log('Arquivo é PDF, não precisa converter.');
+      // Renomear o PDF enviado para padronizar nome e permitir acesso posterior
+      const outputPath = path.join(uploadDir, `${fileId}.pdf`);
+      fs.renameSync(file.path, outputPath);
+      finalFilePath = outputPath;
     }
 
-    const link = exportUrl;
+    const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
     console.log('Link gerado para download:', link);
 
     res.json({ success: true, link });
@@ -136,11 +140,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   } catch (err) {
     console.error('Erro no upload/conversão:', err);
     res.status(500).json({ error: 'Erro interno no servidor.' });
-  } finally {
-    if (fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path);
-      console.log('Arquivo temporário removido:', file.path);
-    }
   }
 });
 
