@@ -43,48 +43,7 @@
       margin-top: 1em;
       word-break: break-word;
     }
-    #pdfViewer {
-      background: #333;
-      border-radius: 10px;
-      padding: 1em;
-      max-width: 90vw;
-      max-height: 80vh;
-      overflow: auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.7);
-      text-align: center;
-      user-select: none; /* desativa seleção */
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-    }
-    canvas {
-      display: block;
-      margin: 0 auto 1em auto;
-      border: 1px solid #666;
-      user-select: none; /* impede seleção */
-    }
-    #navigation {
-      margin-bottom: 1em;
-    }
-    #navigation button {
-      background-color: #444;
-      color: #fff;
-      border-radius: 5px;
-      border: none;
-      padding: 0.5em 1em;
-      margin: 0 0.5em;
-      font-size: 1em;
-      cursor: pointer;
-    }
-    #navigation button:disabled {
-      background-color: #222;
-      cursor: default;
-      opacity: 0.5;
-    }
   </style>
-
-  <!-- PDF.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -96,92 +55,12 @@
     <p id="responseMsg"></p>
   </div>
 
-  <div id="pdfViewer" style="display:none;">
-    <div id="navigation">
-      <button id="prevPage" disabled>Anterior</button>
-      <span>Página <span id="pageNum">0</span> de <span id="pageCount">0</span></span>
-      <button id="nextPage" disabled>Próxima</button>
-    </div>
-    <canvas id="pdfCanvas"></canvas>
-  </div>
-
   <script>
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
-
-    const canvas = document.getElementById('pdfCanvas');
-    const ctx = canvas.getContext('2d');
-    const pdfViewer = document.getElementById('pdfViewer');
-    const responseMsg = document.getElementById('responseMsg');
-
-    const pageNumElem = document.getElementById('pageNum');
-    const pageCountElem = document.getElementById('pageCount');
-    const prevBtn = document.getElementById('prevPage');
-    const nextBtn = document.getElementById('nextPage');
-
-    let pdfDoc = null;
-    let currentPage = 1;
-    let totalPages = 0;
-    const scale = 1.5;
-
-    // Renderiza a página atual
-    async function renderPage(num) {
-      const page = await pdfDoc.getPage(num);
-      const viewport = page.getViewport({ scale });
-
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      const renderContext = {
-        canvasContext: ctx,
-        viewport: viewport
-      };
-
-      await page.render(renderContext).promise;
-
-      pageNumElem.textContent = num;
-      pageCountElem.textContent = totalPages;
-
-      prevBtn.disabled = (num <= 1);
-      nextBtn.disabled = (num >= totalPages);
-    }
-
-    // Função para carregar o PDF e iniciar visualização
-    async function loadPDF(url) {
-      try {
-        pdfDoc = await pdfjsLib.getDocument(url).promise;
-        totalPages = pdfDoc.numPages;
-        currentPage = 1;
-        pdfViewer.style.display = 'block';
-        await renderPage(currentPage);
-      } catch (error) {
-        responseMsg.textContent = 'Erro ao carregar o PDF para visualização.';
-        pdfViewer.style.display = 'none';
-      }
-    }
-
-    prevBtn.addEventListener('click', () => {
-      if (currentPage <= 1) return;
-      currentPage--;
-      renderPage(currentPage);
-    });
-
-    nextBtn.addEventListener('click', () => {
-      if (currentPage >= totalPages) return;
-      currentPage++;
-      renderPage(currentPage);
-    });
-
-    // Bloquear contexto de clique direito e ctrl+c para proteção
-    canvas.oncontextmenu = e => e.preventDefault();
-    document.addEventListener('keydown', e => {
-      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) e.preventDefault();
-    });
-
     document.getElementById("uploadForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const fileInput = document.getElementById("fileInput");
-      
+      const responseMsg = document.getElementById("responseMsg");
+
       if (!fileInput.files.length) {
         responseMsg.textContent = "Por favor, selecione um arquivo.";
         return;
@@ -191,7 +70,6 @@
       formData.append("file", fileInput.files[0]);
 
       responseMsg.textContent = "Enviando arquivo...";
-      pdfViewer.style.display = 'none'; // esconde viewer antes do upload
 
       try {
         const res = await fetch("https://landingpage-backend-z28u.onrender.com/upload", {
@@ -202,8 +80,10 @@
         const data = await res.json();
 
         if (res.ok && data.link) {
-          responseMsg.innerHTML = `✅ Upload feito com sucesso! <br><a href="${data.link}" target="_blank" rel="noopener">${data.link}</a>`;
-          loadPDF(data.link);
+          responseMsg.innerHTML = `✅ Upload feito com sucesso! Redirecionando...`;
+          setTimeout(() => {
+            window.location.href = 'visualizar.html?pdf=' + encodeURIComponent(data.link);
+          }, 1500);
         } else {
           responseMsg.textContent = `❌ Erro ao enviar: ${data.error || "Resposta inesperada do servidor."}`;
         }
