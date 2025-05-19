@@ -25,7 +25,6 @@ if (!fs.existsSync(uploadDir)) {
 
 const upload = multer({ dest: uploadDir });
 
-// Função para adicionar marca d'água
 async function addWatermark(pdfPath) {
   const existingPdfBytes = fs.readFileSync(pdfPath);
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
@@ -158,7 +157,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       finalFilePath = outputPath;
     }
 
-    // Adiciona a marca d'água antes de responder
     await addWatermark(finalFilePath);
 
     const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
@@ -167,7 +165,21 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     res.json({ success: true, link });
 
   } catch (err) {
-    console.error('Erro no upload/conversão:', err);
+    console.error('❌ Erro no upload/conversão:');
+
+    if (err.response) {
+      console.error('Status:', err.response.status);
+      console.error('Headers:', err.response.headers);
+      console.error('Data:', JSON.stringify(err.response.data, null, 2));
+    } else if (err.request) {
+      console.error('Requisição sem resposta recebida da API CloudConvert.');
+      console.error(err.request);
+    } else {
+      console.error('Erro inesperado:', err.message);
+    }
+
+    console.error('Stack trace:', err.stack);
+
     res.status(500).json({ error: 'Erro interno no servidor.' });
   }
 });
