@@ -61,12 +61,20 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
   const fileId = uuidv4();
   const fileExt = path.extname(file.originalname).toLowerCase();
-  const allowed = ['.pdf', '.docx', '.xlsx'];
+
+  // Lista de formatos compatíveis com conversão para PDF na CloudConvert
+  const allowed = [
+    '.pdf', '.doc', '.docx', '.odt',           // Documentos de texto
+    '.xls', '.xlsx', '.ods',                   // Planilhas
+    '.ppt', '.pptx', '.odp',                   // Apresentações
+    '.png', '.jpg', '.jpeg', '.bmp', '.gif',   // Imagens
+    '.txt', '.rtf', '.html', '.csv', '.svg'    // Outros úteis
+  ];
 
   if (!allowed.includes(fileExt)) {
     console.log(`Formato não permitido: ${fileExt}`);
     fs.unlinkSync(file.path);
-    return res.status(400).json({ error: 'Formato não permitido' });
+    return res.status(400).json({ error: `Formato não permitido: ${fileExt}` });
   }
 
   let exportUrl = null;
