@@ -1,3 +1,4 @@
+
 const express = require('express');
 const multer = require('multer');
 const dotenv = require('dotenv');
@@ -89,8 +90,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
           'convert-my-file': {
             operation: 'convert',
             input: 'import-my-file',
-            output_format: 'pdf',
-            input_format: fileExt.replace('.', '')
+            output_format: 'pdf'
           },
           'export-my-file': {
             operation: 'export/url',
@@ -112,11 +112,13 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       for (const key in uploadParams) {
         uploadForm.append(key, uploadParams[key]);
       }
-      uploadForm.append('file', fs.createReadStream(file.path));
+      uploadForm.append('file', fs.createReadStream(file.path), file.originalname);
 
       try {
         await axios.post(uploadUrl, uploadForm, {
           headers: uploadForm.getHeaders(),
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity
         });
         console.log('✅ Arquivo enviado com sucesso para o CloudConvert.');
       } catch (uploadError) {
