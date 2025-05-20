@@ -29,22 +29,28 @@ const upload = multer({ dest: uploadDir });
 async function addWatermark(pdfPath) {
   const existingPdfBytes = fs.readFileSync(pdfPath);
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
-
   const pages = pdfDoc.getPages();
+
+  const text = 'LN Educacional';
+  const fontSize = 40;
+  const spacingX = 150;
+  const spacingY = 100;
 
   for (const page of pages) {
     const { width, height } = page.getSize();
-    const fontSize = 60;
-    const text = 'LN Educacional';
 
-    page.drawText(text, {
-      x: width / 2 - fontSize * 2.5,
-      y: height / 2,
-      size: fontSize,
-      color: rgb(0.75, 0.75, 0.75),
-      rotate: degrees(-45),
-      opacity: 0.15,
-    });
+    for (let x = 0; x < width; x += spacingX) {
+      for (let y = 0; y < height; y += spacingY) {
+        page.drawText(text, {
+          x,
+          y,
+          size: fontSize,
+          color: rgb(0.75, 0.75, 0.75),
+          rotate: degrees(-45),
+          opacity: 0.2,
+        });
+      }
+    }
   }
 
   const pdfBytes = await pdfDoc.save();
