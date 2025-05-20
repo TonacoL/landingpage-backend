@@ -114,9 +114,16 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       }
       uploadForm.append('file', fs.createReadStream(file.path));
 
-      await axios.post(uploadUrl, uploadForm, {
-        headers: uploadForm.getHeaders(),
-      });
+      try {
+        await axios.post(uploadUrl, uploadForm, {
+          headers: uploadForm.getHeaders(),
+        });
+        console.log('✅ Arquivo enviado com sucesso para o CloudConvert.');
+      } catch (uploadError) {
+        console.error('❌ Erro no envio do arquivo para o CloudConvert:');
+        console.error(uploadError.response?.data || uploadError.message);
+        throw new Error('Falha ao enviar arquivo para conversão.');
+      }
 
       let finished = false;
       const jobId = cloudJob.data.data.id;
@@ -128,7 +135,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         });
 
         const job = statusRes.data.data;
-        console.log('Status atual do job:', JSON.stringify(job.status, null, 2));
+        console.log('Status atual do job:', job.status);
 
         if (job.status === 'finished') {
           finished = true;
