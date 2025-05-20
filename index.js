@@ -45,9 +45,9 @@ async function addWatermark(pdfPath) {
           x,
           y,
           size: fontSize,
-          color: rgb(0.75, 0.75, 0.75),
+          color: rgb(0.6, 0.6, 0.6),     // Mais escuro
           rotate: degrees(-45),
-          opacity: 0.2,
+          opacity: 0.35,                // Mais visível
         });
       }
     }
