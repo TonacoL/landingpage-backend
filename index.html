@@ -2,9 +2,12 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Upload Protegido</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       background-color: #121212;
       color: #fff;
@@ -13,16 +16,18 @@
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
       padding: 1em;
+      overflow-x: hidden;
     }
     .container {
       background: #1e1e1e;
       padding: 2em;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
-      width: 320px;
+      width: 100%;
+      max-width: 400px;
       margin-bottom: 2em;
     }
     input, button {
@@ -42,6 +47,11 @@
     #responseMsg {
       margin-top: 1em;
       word-break: break-word;
+      font-size: 0.95em;
+    }
+    h1 {
+      font-size: 1.4em;
+      text-align: center;
     }
   </style>
 </head>
