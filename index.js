@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({ origin: '*' }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -25,10 +25,31 @@ if (!fs.existsSync(uploadDir)) {
 
 const upload = multer({ dest: uploadDir });
 
+// Função para remover arquivos temporários com mais de 24h
+function cleanOldFiles() {
+  const files = fs.readdirSync(uploadDir);
+  const now = Date.now();
+  const maxAge = 24 * 60 * 60 * 1000; // 24 horas
+
+  files.forEach(file => {
+    const filePath = path.join(uploadDir, file);
+    fs.stat(filePath, (err, stats) => {
+      if (err) return;
+      if (now - stats.mtimeMs > maxAge) {
+        fs.unlink(filePath, err => {
+          if (!err) console.log(`Arquivo antigo removido: ${file}`);
+        });
+      }
+    });
+  });
+}
+// Roda limpeza a cada hora
+setInterval(cleanOldFiles, 60 * 60 * 1000);
+
 async function addWatermark(pdfPath) {
   const existingPdfBytes = fs.readFileSync(pdfPath);
 
-  // Valida o cabeçalho do PDF
+  // Valida cabeçalho PDF
   const header = existingPdfBytes.slice(0, 5).toString();
   if (header !== '%PDF-') {
     throw new Error('Arquivo inválido: Cabeçalho PDF não encontrado.');
@@ -63,162 +84,125 @@ async function addWatermark(pdfPath) {
   fs.writeFileSync(pdfPath, pdfBytes);
 }
 
-app.post('/upload', upload.single('file'), async (req, res) => {
-  console.log('Recebido arquivo para upload.');
+const allowedExtensions = [
+  '.pdf', '.doc', '.docx', '.odt',
+  '.xls', '.xlsx', '.ods',
+  '.ppt', '.pptx', '.odp',
+  '.png', '.jpg', '.jpeg', '.bmp', '.gif',
+  '.txt', '.rtf', '.html', '.csv', '.svg'
+];
 
-  const file = req.file;
-  if (!file) {
-    console.log('Nenhum arquivo enviado.');
-    return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
-  }
-
-  const fileId = uuidv4();
-  const fileExt = path.extname(file.originalname).toLowerCase();
-
-  const allowed = [
-    '.pdf', '.doc', '.docx', '.odt',
-    '.xls', '.xlsx', '.ods',
-    '.ppt', '.pptx', '.odp',
-    '.png', '.jpg', '.jpeg', '.bmp', '.gif',
-    '.txt', '.rtf', '.html', '.csv', '.svg'
-  ];
-
-  if (!allowed.includes(fileExt)) {
-    console.log(`Formato não permitido: ${fileExt}`);
-    fs.unlinkSync(file.path);
-    return res.status(400).json({ error: `Formato não permitido: ${fileExt}` });
-  }
-
-  let exportUrl = null;
-  let finalFilePath = file.path;
-
+app.post('/upload', upload.array('files', 10), async (req, res) => {
   try {
-    if (fileExt !== '.pdf') {
-      console.log('Arquivo não é PDF, iniciando conversão via CloudConvert.');
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+    }
 
-      const cloudJob = await axios.post('https://api.cloudconvert.com/v2/jobs', {
-        tasks: {
-          'import-my-file': { operation: 'import/upload' },
-          'convert-my-file': {
-            operation: 'convert',
-            input: 'import-my-file',
-            output_format: 'pdf'
-          },
-          'export-my-file': {
-            operation: 'export/url',
-            input: 'convert-my-file',
-          }
-        }
-      }, {
-        headers: {
-          Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}`,
-          'Content-Type': 'application/json',
-        }
-      });
+    const processedFiles = [];
 
-      const uploadTask = cloudJob.data.data.tasks.find(t => t.name === 'import-my-file');
-      const uploadUrl = uploadTask.result.form.url;
-      const uploadParams = uploadTask.result.form.parameters;
+    for (const file of req.files) {
+      const fileId = uuidv4();
+      const fileExt = path.extname(file.originalname).toLowerCase();
 
-      const uploadForm = new FormData();
-      for (const key in uploadParams) {
-        uploadForm.append(key, uploadParams[key]);
+      if (!allowedExtensions.includes(fileExt)) {
+        fs.unlinkSync(file.path);
+        return res.status(400).json({ error: `Formato não permitido: ${fileExt}` });
       }
-      uploadForm.append('file', fs.createReadStream(file.path), file.originalname);
 
-      try {
+      let finalFilePath = file.path;
+      let exportUrl = null;
+
+      if (fileExt !== '.pdf') {
+        // Conversão CloudConvert
+        const cloudJob = await axios.post('https://api.cloudconvert.com/v2/jobs', {
+          tasks: {
+            'import-my-file': { operation: 'import/upload' },
+            'convert-my-file': {
+              operation: 'convert',
+              input: 'import-my-file',
+              output_format: 'pdf'
+            },
+            'export-my-file': {
+              operation: 'export/url',
+              input: 'convert-my-file',
+            }
+          }
+        }, {
+          headers: {
+            Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}`,
+            'Content-Type': 'application/json',
+          }
+        });
+
+        const uploadTask = cloudJob.data.data.tasks.find(t => t.name === 'import-my-file');
+        const uploadUrl = uploadTask.result.form.url;
+        const uploadParams = uploadTask.result.form.parameters;
+
+        const uploadForm = new FormData();
+        for (const key in uploadParams) {
+          uploadForm.append(key, uploadParams[key]);
+        }
+        uploadForm.append('file', fs.createReadStream(file.path), file.originalname);
+
         await axios.post(uploadUrl, uploadForm, {
           headers: uploadForm.getHeaders(),
           maxContentLength: Infinity,
           maxBodyLength: Infinity
         });
-        console.log('✅ Arquivo enviado com sucesso para o CloudConvert.');
-      } catch (uploadError) {
-        console.error('❌ Erro no envio do arquivo para o CloudConvert:');
-        console.error(uploadError.response?.data || uploadError.message);
-        throw new Error('Falha ao enviar arquivo para conversão.');
-      }
 
-      let finished = false;
-      const jobId = cloudJob.data.data.id;
+        let finished = false;
+        const jobId = cloudJob.data.data.id;
 
-      while (!finished) {
-        console.log('Verificando status da conversão...');
-        const statusRes = await axios.get(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
-          headers: { Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}` },
-        });
+        while (!finished) {
+          const statusRes = await axios.get(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
+            headers: { Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}` },
+          });
 
-        const job = statusRes.data.data;
-        console.log('Status atual do job:', job.status);
+          const job = statusRes.data.data;
 
-        if (job.status === 'finished') {
-          finished = true;
-          const exportTask = job.tasks.find(t => t.name === 'export-my-file');
-          exportUrl = exportTask.result.files[0].url;
-          console.log('Conversão finalizada. URL do arquivo:', exportUrl);
-        } else if (job.status === 'error' || job.status === 'failed') {
-          const failedTask = job.tasks.find(t => t.status === 'error' || t.status === 'failed');
-          console.error('Erro na tarefa específica:', JSON.stringify(failedTask, null, 2));
-          throw new Error('Erro na conversão do arquivo');
+          if (job.status === 'finished') {
+            finished = true;
+            const exportTask = job.tasks.find(t => t.name === 'export-my-file');
+            exportUrl = exportTask.result.files[0].url;
+          } else if (job.status === 'error' || job.status === 'failed') {
+            const failedTask = job.tasks.find(t => t.status === 'error' || t.status === 'failed');
+            throw new Error('Erro na conversão do arquivo');
+          }
+
+          if (!finished) await new Promise(r => setTimeout(r, 3000));
         }
 
-        if (!finished) await new Promise(r => setTimeout(r, 3000));
+        const downloadRes = await axios.get(exportUrl, { responseType: 'stream' });
+        const outputPath = path.join(uploadDir, `${fileId}.pdf`);
+        const writer = fs.createWriteStream(outputPath);
+
+        downloadRes.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+          writer.on('finish', resolve);
+          writer.on('error', reject);
+        });
+
+        finalFilePath = outputPath;
+      } else {
+        const outputPath = path.join(uploadDir, `${fileId}.pdf`);
+        fs.renameSync(file.path, outputPath);
+        finalFilePath = outputPath;
       }
 
-      const downloadRes = await axios.get(exportUrl, { responseType: 'stream' });
-      const outputPath = path.join(uploadDir, `${fileId}.pdf`);
-      const writer = fs.createWriteStream(outputPath);
+      await addWatermark(finalFilePath);
 
-      downloadRes.data.pipe(writer);
-
-      await new Promise((resolve, reject) => {
-        writer.on('finish', () => {
-          console.log('Arquivo convertido salvo em:', outputPath);
-          resolve();
-        });
-        writer.on('error', err => {
-          console.error('Erro ao salvar arquivo convertido:', err);
-          reject(err);
-        });
+      processedFiles.push({
+        originalName: file.originalname,
+        downloadLink: `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`
       });
-
-      finalFilePath = outputPath;
-
-      // Verifica os primeiros bytes do arquivo para debug
-      const checkBytes = fs.readFileSync(finalFilePath).slice(0, 20).toString();
-      console.log('Primeiros bytes do arquivo convertido:', checkBytes);
-
-    } else {
-      console.log('Arquivo é PDF, não precisa converter.');
-      const outputPath = path.join(uploadDir, `${fileId}.pdf`);
-      fs.renameSync(file.path, outputPath);
-      finalFilePath = outputPath;
     }
 
-    await addWatermark(finalFilePath);
-
-    const link = `https://landingpage-backend-z28u.onrender.com/file/${fileId}.pdf`;
-    console.log('Link gerado para download:', link);
-
-    res.json({ success: true, link });
+    return res.json({ success: true, files: processedFiles });
 
   } catch (err) {
-    console.error('❌ Erro no upload/conversão:');
-
-    if (err.response) {
-      console.error('Status:', err.response.status);
-      console.error('Headers:', err.response.headers);
-      console.error('Data:', JSON.stringify(err.response.data, null, 2));
-    } else if (err.request) {
-      console.error('Requisição sem resposta recebida da API CloudConvert.');
-      console.error(err.request);
-    } else {
-      console.error('Erro inesperado:', err.message);
-    }
-
-    console.error('Stack trace:', err.stack);
-
-    res.status(500).json({ error: 'Erro interno no servidor.' });
+    console.error('❌ Erro no upload/conversão:', err);
+    return res.status(500).json({ error: 'Erro interno no servidor.' });
   }
 });
 
