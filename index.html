@@ -140,8 +140,17 @@
     dropArea.addEventListener('drop', e => {
       e.preventDefault();
       dropArea.style.backgroundColor = '#2a2a2a';
-      fileInput.files = e.dataTransfer.files;
-      updateFileList();
+
+      const dt = new DataTransfer();
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        dt.items.add(e.dataTransfer.files[i]);
+      }
+
+      fileInput.files = dt.files;
+
+      // Dispara o evento 'change' manualmente
+      const event = new Event('change', { bubbles: true });
+      fileInput.dispatchEvent(event);
     });
 
     fileInput.addEventListener('change', updateFileList);
