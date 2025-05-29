@@ -1,4 +1,3 @@
-
 const express = require('express');
 const multer = require('multer');
 const dotenv = require('dotenv');
@@ -28,6 +27,13 @@ const upload = multer({ dest: uploadDir });
 
 async function addWatermark(pdfPath) {
   const existingPdfBytes = fs.readFileSync(pdfPath);
+
+  // Valida o cabeçalho do PDF
+  const header = existingPdfBytes.slice(0, 5).toString();
+  if (header !== '%PDF-') {
+    throw new Error('Arquivo inválido: Cabeçalho PDF não encontrado.');
+  }
+
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
   const pages = pdfDoc.getPages();
 
@@ -45,9 +51,9 @@ async function addWatermark(pdfPath) {
           x,
           y,
           size: fontSize,
-          color: rgb(0.6, 0.6, 0.6),     // Mais escuro
+          color: rgb(0.6, 0.6, 0.6),
           rotate: degrees(-45),
-          opacity: 0.35,                // Mais visível
+          opacity: 0.35,
         });
       }
     }
@@ -177,6 +183,11 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       });
 
       finalFilePath = outputPath;
+
+      // Verifica os primeiros bytes do arquivo para debug
+      const checkBytes = fs.readFileSync(finalFilePath).slice(0, 20).toString();
+      console.log('Primeiros bytes do arquivo convertido:', checkBytes);
+
     } else {
       console.log('Arquivo é PDF, não precisa converter.');
       const outputPath = path.join(uploadDir, `${fileId}.pdf`);
