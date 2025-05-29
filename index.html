@@ -2,103 +2,193 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Upload Protegido</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Acadêmico</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
-      background-color: #121212;
+      background: #121212;
       color: #fff;
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 2em 1em;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      margin: 0;
-      padding: 1em;
-      overflow-x: hidden;
     }
     .container {
       background: #1e1e1e;
-      padding: 2em;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      padding: 2em;
+      max-width: 500px;
       width: 100%;
-      max-width: 400px;
-      margin-bottom: 2em;
+      box-shadow: 0 0 15px rgba(0, 123, 255, 0.4);
+      text-align: center;
+      position: relative;
     }
-    input, button {
+    .icon {
+      width: 50px;
+      margin-bottom: 0.5em;
+    }
+    h1 {
+      font-size: 1.5em;
+      color: #66b2ff;
+    }
+    #dropArea {
+      border: 2px dashed #66b2ff;
+      border-radius: 10px;
+      padding: 1.5em;
       margin-top: 1em;
-      padding: 0.5em;
-      width: 100%;
+      cursor: pointer;
+      background-color: #2a2a2a;
+      transition: background-color 0.3s ease;
+    }
+    #dropArea:hover {
       background-color: #333;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    button {
+      margin-top: 1em;
+      padding: 0.6em;
+      width: 100%;
+      background-color: #007bff;
       border: none;
       border-radius: 5px;
       color: white;
       font-size: 1em;
+      cursor: pointer;
     }
     button:hover {
-      background-color: #555;
-      cursor: pointer;
+      background-color: #0056b3;
+    }
+    #fileList {
+      text-align: left;
+      font-size: 0.9em;
+      margin-top: 1em;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    #progressBar {
+      width: 100%;
+      background-color: #333;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 1em;
+      height: 10px;
+    }
+    #progress {
+      height: 100%;
+      width: 0%;
+      background-color: #66b2ff;
+      transition: width 0.4s ease;
     }
     #responseMsg {
       margin-top: 1em;
-      word-break: break-word;
       font-size: 0.95em;
-    }
-    h1 {
-      font-size: 1.4em;
-      text-align: center;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Enviar e Proteger Arquivo</h1>
+    <img class="icon" src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Chapéu de formatura">
+    <h1>Upload de Arquivos Acadêmicos</h1>
     <form id="uploadForm">
-      <input type="file" id="fileInput" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx" required />
+      <label id="dropArea">
+        <p>Arraste e solte os arquivos aqui ou clique para selecionar</p>
+        <input type="file" id="fileInput" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" />
+      </label>
+      <div id="fileList"></div>
+      <div id="progressBar"><div id="progress"></div></div>
       <button type="submit">Enviar e Proteger</button>
     </form>
     <p id="responseMsg"></p>
   </div>
 
   <script>
+    const fileInput = document.getElementById('fileInput');
+    const dropArea = document.getElementById('dropArea');
+    const fileList = document.getElementById('fileList');
+    const responseMsg = document.getElementById('responseMsg');
+    const progressBar = document.getElementById('progress');
+
+    dropArea.addEventListener('click', () => fileInput.click());
+
+    dropArea.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropArea.style.backgroundColor = '#444';
+    });
+
+    dropArea.addEventListener('dragleave', () => {
+      dropArea.style.backgroundColor = '#2a2a2a';
+    });
+
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault();
+      dropArea.style.backgroundColor = '#2a2a2a';
+      fileInput.files = e.dataTransfer.files;
+      updateFileList();
+    });
+
+    fileInput.addEventListener('change', updateFileList);
+
+    function updateFileList() {
+      fileList.innerHTML = "";
+      for (let file of fileInput.files) {
+        fileList.innerHTML += `<div>📄 ${file.name}</div>`;
+      }
+    }
+
     document.getElementById("uploadForm").addEventListener("submit", async function(e) {
       e.preventDefault();
-      const fileInput = document.getElementById("fileInput");
-      const responseMsg = document.getElementById("responseMsg");
-
       if (!fileInput.files.length) {
-        responseMsg.textContent = "Por favor, selecione um arquivo.";
+        responseMsg.textContent = "❗ Selecione ao menos um arquivo.";
         return;
       }
 
       const formData = new FormData();
-      formData.append("file", fileInput.files[0]);
+      for (let file of fileInput.files) {
+        formData.append("files", file);
+      }
 
-      responseMsg.textContent = "Enviando arquivo...";
+      responseMsg.textContent = "⏳ Enviando...";
+      progressBar.style.width = '0%';
 
       try {
-        const res = await fetch("https://landingpage-backend-z28u.onrender.com/upload", {
-          method: "POST",
-          body: formData
-        });
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://landingpage-backend-z28u.onrender.com/upload");
 
-        const data = await res.json();
+        xhr.upload.onprogress = function(e) {
+          if (e.lengthComputable) {
+            const percent = (e.loaded / e.total) * 100;
+            progressBar.style.width = percent + "%";
+          }
+        };
 
-        if (res.ok && data.link) {
-          responseMsg.innerHTML = `✅ Upload feito com sucesso! Redirecionando...`;
-          setTimeout(() => {
-            window.location.href = 'visualizar.html?pdf=' + encodeURIComponent(data.link);
-          }, 1500);
-        } else {
-          responseMsg.textContent = `❌ Erro ao enviar: ${data.error || "Resposta inesperada do servidor."}`;
-        }
-      } catch (error) {
-        responseMsg.textContent = `❌ Erro na requisição: ${error.message}`;
+        xhr.onload = function() {
+          if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            if (data.links && Array.isArray(data.links)) {
+              responseMsg.innerHTML = `✅ Arquivos enviados! Redirecionando...`;
+              setTimeout(() => {
+                window.location.href = 'visualizar.html?pdf=' + encodeURIComponent(data.links[0]);
+              }, 2000);
+            } else {
+              responseMsg.textContent = "❌ Erro: resposta inesperada.";
+            }
+          } else {
+            responseMsg.textContent = `❌ Falha no envio.`;
+          }
+        };
+
+        xhr.onerror = function() {
+          responseMsg.textContent = "❌ Erro na requisição.";
+        };
+
+        xhr.send(formData);
+      } catch (err) {
+        responseMsg.textContent = "❌ Erro: " + err.message;
       }
     });
   </script>
