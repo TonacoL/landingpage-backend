@@ -100,6 +100,17 @@
     #responseMsg {
       margin-top: 1em;
       font-size: 0.95em;
+      padding: 0.8em;
+      border-radius: 5px;
+      display: none;
+    }
+    .success {
+      background-color: #2e7d32;
+      color: #d4edda;
+    }
+    .error {
+      background-color: #c62828;
+      color: #fce8e6;
     }
   </style>
 </head>
@@ -120,11 +131,14 @@
   </div>
 
   <script>
+    const MAX_FILE_SIZE_MB = 10;
     const fileInput = document.getElementById('fileInput');
     const dropArea = document.getElementById('dropArea');
     const fileList = document.getElementById('fileList');
     const responseMsg = document.getElementById('responseMsg');
     const progressBar = document.getElementById('progress');
+
+    let droppedFiles = [];
 
     dropArea.addEventListener('click', () => fileInput.click());
 
@@ -141,40 +155,50 @@
       e.preventDefault();
       dropArea.style.backgroundColor = '#2a2a2a';
 
-      const dt = new DataTransfer();
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        dt.items.add(e.dataTransfer.files[i]);
-      }
-
-      fileInput.files = dt.files;
-
-      // Dispara o evento 'change' manualmente
-      const event = new Event('change', { bubbles: true });
-      fileInput.dispatchEvent(event);
+      droppedFiles = Array.from(e.dataTransfer.files);
+      updateFileList();
     });
 
-    fileInput.addEventListener('change', updateFileList);
+    fileInput.addEventListener('change', () => {
+      droppedFiles = Array.from(fileInput.files);
+      updateFileList();
+    });
 
     function updateFileList() {
       fileList.innerHTML = "";
-      for (let file of fileInput.files) {
+      for (let file of droppedFiles) {
         fileList.innerHTML += `<div>📄 ${file.name}</div>`;
       }
     }
 
+    function showMessage(message, type = 'success') {
+      responseMsg.style.display = 'block';
+      responseMsg.className = type;
+      responseMsg.textContent = message;
+    }
+
     document.getElementById("uploadForm").addEventListener("submit", async function(e) {
       e.preventDefault();
-      if (!fileInput.files.length) {
-        responseMsg.textContent = "❗ Selecione ao menos um arquivo.";
+      responseMsg.style.display = 'none';
+
+      if (!droppedFiles.length) {
+        showMessage("❗ Nenhum arquivo selecionado. Por favor, escolha um arquivo para enviar.", "error");
         return;
       }
 
+      for (let file of droppedFiles) {
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+          showMessage(`❌ O arquivo "${file.name}" é maior que ${MAX_FILE_SIZE_MB}MB. Por favor, envie arquivos menores.`, "error");
+          return;
+        }
+      }
+
       const formData = new FormData();
-      for (let file of fileInput.files) {
+      for (let file of droppedFiles) {
         formData.append("files", file);
       }
 
-      responseMsg.textContent = "⏳ Enviando...";
+      showMessage("⏳ Enviando arquivos, por favor aguarde...", "success");
       progressBar.style.width = '0%';
 
       try {
@@ -192,25 +216,25 @@
           if (xhr.status === 200) {
             const data = JSON.parse(xhr.responseText);
             if (data.links && Array.isArray(data.links)) {
-              responseMsg.innerHTML = `✅ Arquivos enviados! Redirecionando...`;
+              showMessage("✅ Arquivos enviados com sucesso! Redirecionando...", "success");
               setTimeout(() => {
                 window.location.href = 'visualizar.html?pdf=' + encodeURIComponent(data.links[0]);
               }, 2000);
             } else {
-              responseMsg.textContent = "❌ Erro: resposta inesperada.";
+              showMessage("❌ O servidor respondeu, mas os arquivos não foram processados corretamente. Tente novamente.", "error");
             }
           } else {
-            responseMsg.textContent = `❌ Falha no envio.`;
+            showMessage(`❌ Erro no envio. Código: ${xhr.status}. Tente novamente.`, "error");
           }
         };
 
         xhr.onerror = function() {
-          responseMsg.textContent = "❌ Erro na requisição.";
+          showMessage("❌ Falha na conexão com o servidor. Verifique sua internet e tente novamente.", "error");
         };
 
         xhr.send(formData);
       } catch (err) {
-        responseMsg.textContent = "❌ Erro: " + err.message;
+        showMessage("❌ Erro inesperado: " + err.message, "error");
       }
     });
   </script>
