@@ -3,75 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visualizador Protegido</title>
+  <title>Visualização Segura</title>
   <style>
     body {
       background-color: #121212;
       color: #fff;
       font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1em;
+      text-align: center;
       margin: 0;
-
-      /* Evitar seleção de texto e arrasto */
+      padding: 2em;
       user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-user-drag: none;
+    }
+    h1 {
+      color: #66b2ff;
+      margin-bottom: 1em;
     }
     #pdfViewer {
-      background: #333;
+      background: #1e1e1e;
       border-radius: 10px;
       padding: 1em;
       max-width: 90vw;
       max-height: 80vh;
       overflow: auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.7);
-      text-align: center;
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-user-drag: none;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
     }
     canvas {
       display: block;
       margin: 0 auto 1em auto;
       border: 1px solid #666;
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-user-drag: none;
     }
     #navigation {
       margin-bottom: 1em;
     }
     #navigation button {
-      background-color: #444;
+      background-color: #007bff;
       color: #fff;
-      border-radius: 5px;
       border: none;
+      border-radius: 5px;
       padding: 0.5em 1em;
       margin: 0 0.5em;
-      font-size: 1em;
       cursor: pointer;
     }
     #navigation button:disabled {
-      background-color: #222;
-      cursor: default;
+      background-color: #444;
       opacity: 0.5;
+      cursor: default;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
 </head>
 <body>
+  <h1>Visualização Protegida</h1>
   <div id="pdfViewer">
     <div id="navigation">
       <button id="prevPage" disabled>Anterior</button>
@@ -98,8 +80,7 @@
     const scale = 1.5;
 
     function getQueryParam(param) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(param);
+      return new URLSearchParams(window.location.search).get(param);
     }
 
     async function renderPage(num) {
@@ -108,12 +89,8 @@
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
-      const renderContext = {
-        canvasContext: ctx,
-        viewport: viewport
-      };
+      await page.render({ canvasContext: ctx, viewport }).promise;
 
-      await page.render(renderContext).promise;
       pageNumElem.textContent = num;
       pageCountElem.textContent = totalPages;
       prevBtn.disabled = (num <= 1);
@@ -131,27 +108,14 @@
       }
     }
 
-    prevBtn.addEventListener('click', () => {
-      if (currentPage <= 1) return;
-      currentPage--;
-      renderPage(currentPage);
-    });
+    prevBtn.onclick = () => currentPage > 1 && renderPage(--currentPage);
+    nextBtn.onclick = () => currentPage < totalPages && renderPage(++currentPage);
 
-    nextBtn.addEventListener('click', () => {
-      if (currentPage >= totalPages) return;
-      currentPage++;
-      renderPage(currentPage);
-    });
-
-    // Bloquear menu de contexto (botão direito) no canvas
     canvas.oncontextmenu = e => e.preventDefault();
-
-    // Bloquear arrastar o canvas (imagem)
     canvas.ondragstart = e => e.preventDefault();
 
-    // Bloquear Ctrl/Cmd + C, P, S para evitar copiar, imprimir e salvar
     document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && ['c','p','s'].includes(e.key.toLowerCase())) {
+      if ((e.ctrlKey || e.metaKey) && ['c', 'p', 's'].includes(e.key.toLowerCase())) {
         e.preventDefault();
       }
     });
