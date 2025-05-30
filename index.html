@@ -3,240 +3,237 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Upload Acadêmico</title>
+  <title>LN Educacional - Proteção de Documentos</title>
   <style>
     * { box-sizing: border-box; }
     body {
-      background: #121212;
-      color: #fff;
+      background: #f8f9fc;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 2em 1em;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 0;
+      color: #333;
     }
-    .container {
-      background: #1e1e1e;
-      border-radius: 10px;
-      padding: 2em;
-      max-width: 500px;
-      width: 100%;
-      box-shadow: 0 0 15px rgba(0, 123, 255, 0.4);
-      text-align: center;
-      position: relative;
-    }
-    .icon {
-      width: 50px;
-      margin-bottom: 0.5em;
-    }
-    h1 {
-      font-size: 1.5em;
-      color: #66b2ff;
-    }
-    #dropArea {
-      border: 2px dashed #66b2ff;
-      border-radius: 10px;
-      padding: 1.5em;
-      margin-top: 1em;
-      cursor: pointer;
-      background-color: #2a2a2a;
-      transition: background-color 0.3s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    #dropArea:hover {
-      background-color: #333;
-    }
-    #dropArea p {
-      margin: 0;
-      text-align: center;
-      color: #ccc;
-      font-size: 1em;
-      max-width: 90%;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-    }
-    input[type="file"] {
-      display: none;
-    }
-    button {
-      margin-top: 1em;
-      padding: 0.6em;
-      width: 100%;
-      background-color: #007bff;
-      border: none;
-      border-radius: 5px;
+    header {
+      background: #3c4bd3;
       color: white;
+      padding: 1em 2em;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8em;
+    }
+    header p {
+      margin: 0.5em 0 0;
       font-size: 1em;
+    }
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 2em;
+    }
+    .info-box {
+      background: #e9f0ff;
+      padding: 1.5em;
+      border-radius: 10px;
+      margin-bottom: 2em;
+      border-left: 5px solid #3c4bd3;
+    }
+    .info-box h3 {
+      color: #3c4bd3;
+      margin-top: 0;
+    }
+    .features {
+      display: flex;
+      gap: 1em;
+      margin-bottom: 2em;
+      flex-wrap: wrap;
+    }
+    .feature {
+      flex: 1;
+      min-width: 200px;
+      background: white;
+      padding: 1em;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .upload-area {
+      background: #ffffff;
+      border: 2px dashed #3c4bd3;
+      padding: 2em;
+      text-align: center;
+      border-radius: 10px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #0056b3;
+    .upload-area:hover {
+      background: #f0f4ff;
     }
-    #fileList {
-      text-align: left;
-      font-size: 0.9em;
-      margin-top: 1em;
-      max-height: 150px;
-      overflow-y: auto;
+    .progress-section {
+      margin-top: 2em;
+      text-align: center;
     }
-    #progressBar {
-      width: 100%;
-      background-color: #333;
-      border-radius: 5px;
-      overflow: hidden;
-      margin-top: 1em;
+    .progress-bar {
       height: 10px;
+      width: 100%;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1em 0;
     }
-    #progress {
+    .progress-bar-fill {
       height: 100%;
-      width: 0%;
-      background-color: #66b2ff;
-      transition: width 0.4s ease;
+      width: 0;
+      background: linear-gradient(to right, #3c4bd3, #8b24c6);
+      transition: width 0.5s ease;
     }
-    #responseMsg {
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+      color: #666;
+    }
+    .response {
       margin-top: 1em;
-      font-size: 0.95em;
-      padding: 0.8em;
-      border-radius: 5px;
+      padding: 1em;
       display: none;
+      border-radius: 5px;
     }
-    .success {
-      background-color: #2e7d32;
-      color: #d4edda;
+    .response.success {
+      background: #d4edda;
+      color: #155724;
     }
-    .error {
-      background-color: #c62828;
-      color: #fce8e6;
+    .response.error {
+      background: #f8d7da;
+      color: #721c24;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <img class="icon" src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Chapéu de formatura">
-    <h1>Upload de Arquivos Acadêmicos</h1>
-    <form id="uploadForm">
-      <label id="dropArea">
-        <p>Arraste e solte os arquivos aqui ou clique para selecionar</p>
-        <input type="file" id="fileInput" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx" />
-      </label>
-      <div id="fileList"></div>
-      <div id="progressBar"><div id="progress"></div></div>
-      <button type="submit">Enviar e Proteger</button>
-    </form>
-    <p id="responseMsg"></p>
-  </div>
+  <header>
+    <h1>LN Educacional</h1>
+    <p>Sistema Avançado de Proteção de Documentos</p>
+  </header>
+  <main>
+    <div class="info-box">
+      <h3>🔐 Como funciona:</h3>
+      <ul>
+        <li><strong>Proteção completa:</strong> Cada página do documento é convertida em imagem com marca d'água.</li>
+        <li><strong>Garantia de originalidade:</strong> Marcas d'água variam em posição, tamanho e ângulo.</li>
+        <li><strong>Acesso simplificado:</strong> Compartilhe o link gerado para visualização segura.</li>
+      </ul>
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="40" alt="Conversão">
+        <h4>Conversão Segura</h4>
+        <p>Documentos convertidos em imagens protegidas</p>
+      </div>
+      <div class="feature">
+        <img src="https://cdn-icons-png.flaticon.com/512/709/709496.png" width="40" alt="Visualização">
+        <h4>Visualização Segura</h4>
+        <p>Conteúdo legível mas não reutilizável</p>
+      </div>
+      <div class="feature">
+        <img src="https://cdn-icons-png.flaticon.com/512/1077/1077035.png" width="40" alt="Link">
+        <h4>Link Exclusivo</h4>
+        <p>Compartilhamento fácil e controlado</p>
+      </div>
+    </div>
+
+    <div class="upload-area" id="dropArea">
+      <p>Arraste seu arquivo aqui ou clique para selecionar</p>
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" hidden />
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-bar">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="steps">
+        <span>1 Análise</span>
+        <span>2 Conversão</span>
+        <span>3 Proteção</span>
+        <span>4 Finalização</span>
+      </div>
+    </div>
+
+    <div class="response" id="responseMsg"></div>
+  </main>
 
   <script>
-    const MAX_FILE_SIZE_MB = 10;
-    const fileInput = document.getElementById('fileInput');
     const dropArea = document.getElementById('dropArea');
-    const fileList = document.getElementById('fileList');
+    const fileInput = document.getElementById('fileInput');
+    const progressFill = document.getElementById('progressFill');
     const responseMsg = document.getElementById('responseMsg');
-    const progressBar = document.getElementById('progress');
-
-    let droppedFiles = [];
+    let selectedFile = null;
 
     dropArea.addEventListener('click', () => fileInput.click());
-
-    dropArea.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropArea.style.backgroundColor = '#444';
-    });
-
-    dropArea.addEventListener('dragleave', () => {
-      dropArea.style.backgroundColor = '#2a2a2a';
-    });
-
+    dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.background = '#f0f4ff'; });
+    dropArea.addEventListener('dragleave', () => dropArea.style.background = '#fff');
     dropArea.addEventListener('drop', e => {
       e.preventDefault();
-      dropArea.style.backgroundColor = '#2a2a2a';
-
-      droppedFiles = Array.from(e.dataTransfer.files);
-      updateFileList();
+      dropArea.style.background = '#fff';
+      selectedFile = e.dataTransfer.files[0];
+      uploadFile();
     });
-
     fileInput.addEventListener('change', () => {
-      droppedFiles = Array.from(fileInput.files);
-      updateFileList();
+      selectedFile = fileInput.files[0];
+      uploadFile();
     });
 
-    function updateFileList() {
-      fileList.innerHTML = "";
-      for (let file of droppedFiles) {
-        fileList.innerHTML += `<div>📄 ${file.name}</div>`;
-      }
-    }
-
-    function showMessage(message, type = 'success') {
+    function showMessage(text, type) {
+      responseMsg.className = 'response ' + type;
+      responseMsg.textContent = text;
       responseMsg.style.display = 'block';
-      responseMsg.className = type;
-      responseMsg.textContent = message;
     }
 
-    document.getElementById("uploadForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      responseMsg.style.display = 'none';
-
-      if (!droppedFiles.length) {
-        showMessage("❗ Nenhum arquivo selecionado. Por favor, escolha um arquivo para enviar.", "error");
+    function uploadFile() {
+      if (!selectedFile) {
+        showMessage('Nenhum arquivo selecionado.', 'error');
         return;
       }
 
-      for (let file of droppedFiles) {
-        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-          showMessage(`❌ O arquivo "${file.name}" é maior que ${MAX_FILE_SIZE_MB}MB. Por favor, envie arquivos menores.`, "error");
-          return;
-        }
-      }
+      showMessage('Processando seu documento...', 'success');
+      progressFill.style.width = '10%';
 
       const formData = new FormData();
-      for (let file of droppedFiles) {
-        formData.append("files", file);
-      }
+      formData.append('files', selectedFile);
 
-      showMessage("⏳ Enviando arquivos, por favor aguarde...", "success");
-      progressBar.style.width = '0%';
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://landingpage-backend-z28u.onrender.com/upload');
 
-      try {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "https://landingpage-backend-z28u.onrender.com/upload");
+      xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+          const percent = Math.min(80, (e.loaded / e.total) * 80);
+          progressFill.style.width = percent + '%';
+        }
+      };
 
-        xhr.upload.onprogress = function(e) {
-          if (e.lengthComputable) {
-            const percent = (e.loaded / e.total) * 100;
-            progressBar.style.width = percent + "%";
-          }
-        };
-
-        xhr.onload = function() {
-          if (xhr.status === 200) {
-            const data = JSON.parse(xhr.responseText);
-            if (data.links && Array.isArray(data.links)) {
-              showMessage("✅ Arquivos enviados com sucesso! Redirecionando...", "success");
-              setTimeout(() => {
-                window.location.href = 'visualizar.html?pdf=' + encodeURIComponent(data.links[0]);
-              }, 2000);
-            } else {
-              showMessage("❌ O servidor respondeu, mas os arquivos não foram processados corretamente. Tente novamente.", "error");
-            }
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          if (data.links && Array.isArray(data.links)) {
+            progressFill.style.width = '100%';
+            showMessage('Documento protegido com sucesso! Redirecionando...', 'success');
+            setTimeout(() => {
+              window.location.href = 'visualizar.html?pdf=' + encodeURIComponent(data.links[0]);
+            }, 2000);
           } else {
-            showMessage(`❌ Erro no envio. Código: ${xhr.status}. Tente novamente.`, "error");
+            showMessage('Erro: resposta inesperada do servidor.', 'error');
           }
-        };
+        } else {
+          showMessage('Erro no envio. Por favor, tente novamente.', 'error');
+        }
+      };
 
-        xhr.onerror = function() {
-          showMessage("❌ Falha na conexão com o servidor. Verifique sua internet e tente novamente.", "error");
-        };
+      xhr.onerror = function() {
+        showMessage('Falha na conexão com o servidor.', 'error');
+      };
 
-        xhr.send(formData);
-      } catch (err) {
-        showMessage("❌ Erro inesperado: " + err.message, "error");
-      }
-    });
+      xhr.send(formData);
+    }
   </script>
 </body>
 </html>
