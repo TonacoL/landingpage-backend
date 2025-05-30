@@ -77,7 +77,8 @@ app.post('/upload', upload.array('files'), async (req, res) => {
       });
 
       if (error) {
-        throw new Error('Erro ao enviar para o Supabase');
+        console.error('❌ Erro ao enviar para o Supabase:', error);
+        return res.status(500).json({ error: 'Erro ao enviar para o Supabase', details: error.message || error });
       }
 
       // Gera URL pública
@@ -89,8 +90,8 @@ app.post('/upload', upload.array('files'), async (req, res) => {
 
     res.json({ success: true, links });
   } catch (err) {
-    console.error('Erro:', err.message);
-    res.status(500).json({ error: 'Erro interno no servidor.' });
+    console.error('Erro inesperado no servidor:', err.message);
+    res.status(500).json({ error: 'Erro interno no servidor.', details: err.message });
   }
 });
 
