@@ -74,10 +74,10 @@ function removeOldFiles() {
   });
 }
 
-app.post('/upload', upload.array('files'), async (req, res) => {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
-  }
+app.post('/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+  return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+}
 
   const links = [];
 
