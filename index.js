@@ -21,7 +21,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Marca d’água
 async function addWatermark(pdfPath) {
   const existingPdfBytes = fs.readFileSync(pdfPath);
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
@@ -48,7 +47,6 @@ async function addWatermark(pdfPath) {
   fs.writeFileSync(pdfPath, pdfBytes);
 }
 
-// Upload e conversão
 app.post('/upload', upload.array('files'), async (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
@@ -152,8 +150,8 @@ app.post('/upload', upload.array('files'), async (req, res) => {
         { headers: cloudinaryForm.getHeaders() }
       );
 
-      if (!uploadRes.data.secure_url) {
-        throw new Error('Erro ao enviar para o Cloudinary');
+      if (!uploadRes || !uploadRes.data || !uploadRes.data.secure_url) {
+        throw new Error('Resposta inválida do Cloudinary');
       }
 
       links.push(uploadRes.data.secure_url);
