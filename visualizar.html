@@ -122,12 +122,14 @@
 
     async function loadPDF(url) {
       try {
-        pdfDoc = await pdfjsLib.getDocument(url).promise;
+        const pdfFile = decodeURIComponent(url);
+        pdfDoc = await pdfjsLib.getDocument(pdfFile).promise;
         totalPages = pdfDoc.numPages;
         currentPage = 1;
         await renderPage(currentPage);
       } catch (error) {
-        alert('Erro ao carregar o PDF.');
+        alert('Erro ao carregar o PDF. Verifique se o link está correto e se o arquivo ainda está disponível.');
+        console.error(error);
       }
     }
 
@@ -144,8 +146,11 @@
     });
 
     const pdfUrl = getQueryParam('pdf');
-    if (pdfUrl) loadPDF(pdfUrl);
-    else alert('PDF não encontrado.');
+    if (pdfUrl) {
+      loadPDF(pdfUrl);
+    } else {
+      alert('PDF não encontrado. Verifique o link gerado.');
+    }
   </script>
 </body>
 </html>
