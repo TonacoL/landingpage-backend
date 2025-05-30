@@ -108,7 +108,6 @@ app.post('/upload', upload.array('files'), async (req, res) => {
 
         const jobId = cloudJob.data.data.id;
 
-        // Esperar conversão
         let finished = false;
         let exportUrl = null;
 
@@ -138,33 +137,45 @@ app.post('/upload', upload.array('files'), async (req, res) => {
           writer.on('error', reject);
         });
 
-        fs.unlinkSync(originalPath); // Remove original
+        fs.unlinkSync(originalPath);
       } else {
         fs.renameSync(originalPath, finalPDFPath);
       }
 
+      if (!fs.existsSync(finalPDFPath)) {
+        throw new Error('O arquivo PDF final não foi gerado corretamente.');
+      }
+
       await addWatermark(finalPDFPath);
+
+      const fileBuffer = fs.readFileSync(finalPDFPath);
 
       const { error: uploadError } = await supabase
         .storage
         .from(BUCKET)
-        .upload(`${id}.pdf`, fs.readFileSync(finalPDFPath), {
+        .upload(`${id}.pdf`, fileBuffer, {
           contentType: 'application/pdf',
           upsert: true
         });
 
       if (uploadError) {
-        throw new Error('Erro ao enviar para o Supabase');
+        console.error('❌ Erro Supabase:', uploadError.message);
+        throw new Error('Erro ao enviar para o Supabase: ' + uploadError.message);
       }
 
       const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(`${id}.pdf`);
+
+      if (!urlData || !urlData.publicUrl) {
+        throw new Error('Erro ao gerar link público do arquivo.');
+      }
+
       links.push(urlData.publicUrl);
       fs.unlinkSync(finalPDFPath);
     }
 
     res.json({ success: true, links });
   } catch (err) {
-    console.error('Erro inesperado no servidor:', err.message);
+    console.error('❌ Erro inesperado:', err.message);
     res.status(500).json({ error: 'Erro interno no servidor.', details: err.message });
   }
 });
