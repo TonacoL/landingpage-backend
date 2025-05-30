@@ -1,15 +1,23 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "LN Educacional - Backend de Upload com Supabase",
+  "description": "LN Educacional - Backend de Upload com Cloudinary e CloudConvert",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "upload",
+    "cloudinary",
+    "pdf",
+    "cloudconvert",
+    "ln-educacional"
+  ],
+  "author": "LN Educacional",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.38.4",
     "axios": "^1.9.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -17,7 +25,9 @@
     "form-data": "^4.0.2",
     "multer": "^1.4.5-lts.2",
     "pdf-lib": "^1.17.1",
-    "uuid": "^11.1.0",
-    "@supabase/supabase-js": "^2.38.4"
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }
