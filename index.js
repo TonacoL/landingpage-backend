@@ -14,6 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use('/arquivos', express.static(path.join(__dirname, 'uploads')));
 
 const storage = multer.diskStorage({
   destination: 'uploads/',
@@ -52,8 +53,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   if (!file) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
   }
-
-  const links = [];
 
   try {
     const id = uuidv4();
@@ -131,24 +130,9 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 
     await addWatermark(finalPDFPath);
+    const finalUrl = `/arquivos/${path.basename(finalPDFPath)}`;
 
-    const cloudinaryForm = new FormData();
-    cloudinaryForm.append('file', fs.createReadStream(finalPDFPath));
-    cloudinaryForm.append('upload_preset', process.env.CLOUDINARY_PRESET);
-
-    const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`;
-    const uploadRes = await axios.post(cloudinaryUrl, cloudinaryForm, {
-      headers: cloudinaryForm.getHeaders()
-    });
-
-    if (!uploadRes.data || !uploadRes.data.secure_url) {
-      throw new Error('Erro ao enviar para o Cloudinary');
-    }
-
-    links.push(uploadRes.data.secure_url);
-    fs.unlinkSync(finalPDFPath);
-
-    res.json({ success: true, links });
+    res.json({ success: true, links: [finalUrl] });
   } catch (err) {
     console.error('❌ Erro inesperado:', err.message);
     res.status(500).json({ error: 'Erro interno no servidor.', details: err.message });
@@ -158,3 +142,4 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
+"""
