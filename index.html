@@ -144,7 +144,8 @@
 
     <div class="upload-area" id="dropArea">
       <p>Arraste seu arquivo aqui ou clique para selecionar</p>
-      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" hidden />
+      <!-- ✅ ACEITA VÁRIOS FORMATOS -->
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.odt,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.png,.jpg,.jpeg,.bmp,.gif,.txt,.rtf,.html,.csv,.svg" hidden />
     </div>
 
     <div class="progress-section">
@@ -199,7 +200,7 @@
       progressFill.style.width = '10%';
 
       const formData = new FormData();
-      formData.append('file', selectedFile); // ✅ Corrigido aqui
+      formData.append('file', selectedFile); // ✅ Campo correto para o backend
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', 'https://landingpage-backend-z28u.onrender.com/upload');
