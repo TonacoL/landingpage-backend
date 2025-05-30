@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const dotenv = require('dotenv');
-const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const { PDFDocument, rgb, degrees } = require('pdf-lib');
 const fs = require('fs');
@@ -21,10 +20,6 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, `${uuidv4()}-${file.originalname}`)
 });
 const upload = multer({ storage });
-
-// Supabase
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-const BUCKET = 'documentos';
 
 // Marca d’água
 async function addWatermark(pdfPath) {
@@ -75,7 +70,6 @@ app.post('/upload', upload.array('files'), async (req, res) => {
       }
 
       if (ext !== '.pdf') {
-        // CloudConvert Job
         const cloudJob = await axios.post('https://api.cloudconvert.com/v2/jobs', {
           tasks: {
             'import-file': { operation: 'import/upload' },
@@ -148,28 +142,21 @@ app.post('/upload', upload.array('files'), async (req, res) => {
 
       await addWatermark(finalPDFPath);
 
-      const fileBuffer = fs.readFileSync(finalPDFPath);
+      const cloudinaryForm = new FormData();
+      cloudinaryForm.append('file', fs.createReadStream(finalPDFPath));
+      cloudinaryForm.append('upload_preset', process.env.CLOUDINARY_PRESET);
 
-      const { error: uploadError } = await supabase
-        .storage
-        .from(BUCKET)
-        .upload(`${id}.pdf`, fileBuffer, {
-          contentType: 'application/pdf',
-          upsert: true
-        });
+      const uploadRes = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/upload`,
+        cloudinaryForm,
+        { headers: cloudinaryForm.getHeaders() }
+      );
 
-      if (uploadError) {
-        console.error('❌ Erro Supabase:', uploadError.message);
-        throw new Error('Erro ao enviar para o Supabase: ' + uploadError.message);
+      if (!uploadRes.data.secure_url) {
+        throw new Error('Erro ao enviar para o Cloudinary');
       }
 
-      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(`${id}.pdf`);
-
-      if (!urlData || !urlData.publicUrl) {
-        throw new Error('Erro ao gerar link público do arquivo.');
-      }
-
-      links.push(urlData.publicUrl);
+      links.push(uploadRes.data.secure_url);
       fs.unlinkSync(finalPDFPath);
     }
 
