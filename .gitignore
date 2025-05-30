@@ -1,6 +1,23 @@
+# Ignora variáveis de ambiente (nunca subir .env)
 .env
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
 .env.*
+
+# Ignora dependências (o Render instala)
+node_modules/
+
+# Ignora pastas de build locais
+dist/
+build/
+
+# Ignora arquivos de log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignora cache do Python (caso tenha scripts de integração)
+__pycache__/
+*.py[cod]
+
+# Ignora arquivos de sistema operacional
+.DS_Store
+Thumbs.db
