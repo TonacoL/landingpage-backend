@@ -199,7 +199,7 @@
       progressFill.style.width = '10%';
 
       const formData = new FormData();
-      formData.append('files', selectedFile);
+      formData.append('file', selectedFile); // ✅ Corrigido aqui
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', 'https://landingpage-backend-z28u.onrender.com/upload');
