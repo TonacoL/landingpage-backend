@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Visualização Segura</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       background-color: #121212;
       color: #fff;
@@ -37,7 +35,7 @@
     }
     canvas {
       display: block;
-      margin: 0 auto 1em auto;
+      margin: 0 auto 1em;
       border: 1px solid #666;
       max-width: 100%;
       height: auto;
@@ -122,8 +120,12 @@
 
     async function loadPDF(url) {
       try {
-        const pdfFile = decodeURIComponent(url);
-        pdfDoc = await pdfjsLib.getDocument(pdfFile).promise;
+        const decodedURL = decodeURIComponent(url);
+        if (!decodedURL.startsWith('http')) {
+          throw new Error("Link inválido ou malformado.");
+        }
+
+        pdfDoc = await pdfjsLib.getDocument(decodedURL).promise;
         totalPages = pdfDoc.numPages;
         currentPage = 1;
         await renderPage(currentPage);
@@ -140,7 +142,7 @@
     canvas.oncontextmenu = e => e.preventDefault();
     canvas.ondragstart = e => e.preventDefault();
     document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && ['c', 'p', 's'].includes(e.key.toLowerCase())) {
+      if ((e.ctrlKey || e.metaKey) && ['c', 'p', 's', 'u'].includes(e.key.toLowerCase())) {
         e.preventDefault();
       }
     });
