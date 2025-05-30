@@ -144,17 +144,18 @@ app.post('/upload', upload.array('files'), async (req, res) => {
       cloudinaryForm.append('file', fs.createReadStream(finalPDFPath));
       cloudinaryForm.append('upload_preset', process.env.CLOUDINARY_PRESET);
 
-      const uploadRes = await axios.post(
-        `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/upload`,
-        cloudinaryForm,
-        { headers: cloudinaryForm.getHeaders() }
-      );
+      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/upload`;
 
-      if (!uploadRes || !uploadRes.data || !uploadRes.data.secure_url) {
-        throw new Error('Resposta inválida do Cloudinary');
+      const uploadRes = await axios.post(cloudinaryUrl, cloudinaryForm, {
+        headers: cloudinaryForm.getHeaders()
+      });
+
+      const uploadedUrl = uploadRes?.data?.secure_url;
+      if (!uploadedUrl) {
+        throw new Error('URL de upload não retornada pelo Cloudinary');
       }
 
-      links.push(uploadRes.data.secure_url);
+      links.push(uploadedUrl);
       fs.unlinkSync(finalPDFPath);
     }
 
