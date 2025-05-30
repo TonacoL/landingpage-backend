@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "LN Educacional - Backend de Upload com Cloudinary e CloudConvert",
+  "description": "LN Educacional - Backend de Upload com CloudConvert",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -9,7 +9,6 @@
   },
   "keywords": [
     "upload",
-    "cloudinary",
     "pdf",
     "cloudconvert",
     "ln-educacional"
@@ -31,3 +30,4 @@
     "nodemon": "^3.0.2"
   }
 }
+"""
