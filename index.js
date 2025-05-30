@@ -75,25 +75,23 @@ function removeOldFiles() {
 }
 
 app.post('/upload', upload.single('file'), async (req, res) => {
-  if (!req.file) {
+  const file = req.file;
+  if (!file) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
   }
 
   const links = [];
-
   try {
-    const file = req.file;
     const fileId = uuidv4();
     const fileExt = path.extname(file.originalname).toLowerCase();
     const allowed = ['.pdf', '.doc', '.docx', '.odt', '.xls', '.xlsx', '.ods', '.ppt', '.pptx', '.odp', '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.txt', '.rtf', '.html', '.csv', '.svg'];
 
     if (!allowed.includes(fileExt)) {
       fs.unlinkSync(file.path);
-      return res.status(400).json({ error: 'Formato de arquivo não permitido.' });
+      return res.status(400).json({ error: 'Formato de arquivo não suportado.' });
     }
 
     let finalFilePath = file.path;
-    let exportUrl = null;
 
     if (fileExt !== '.pdf') {
       const cloudJob = await axios.post('https://api.cloudconvert.com/v2/jobs', {
@@ -129,6 +127,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
       const jobId = cloudJob.data.data.id;
       let finished = false;
+      let exportUrl = null;
+
       while (!finished) {
         const statusRes = await axios.get(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
           headers: { Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}` },
@@ -140,7 +140,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
           const exportTask = job.tasks.find(t => t.name === 'export-my-file');
           exportUrl = exportTask.result.files[0].url;
         } else if (job.status === 'error' || job.status === 'failed') {
-          throw new Error('Erro na conversão do arquivo');
+          throw new Error('Erro na conversão do arquivo.');
         }
 
         if (!finished) await new Promise(r => setTimeout(r, 3000));
@@ -163,7 +163,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 
     await addWatermark(finalFilePath);
-
     const link = `${process.env.BASE_URL}/file/${path.basename(finalFilePath)}`;
     links.push(link);
 
