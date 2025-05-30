@@ -6,9 +6,9 @@ const cors = require('cors');
 const { PDFDocument, rgb, degrees } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const FormData = require('form-data');
+const { v4: uuidv4 } = require('uuid');
 
 dotenv.config();
 const app = express();
@@ -26,24 +26,21 @@ const upload = multer({ storage });
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 const BUCKET = 'documentos';
 
-// Adiciona marca d'água no PDF
+// Marca d’água
 async function addWatermark(pdfPath) {
   const existingPdfBytes = fs.readFileSync(pdfPath);
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
   const pages = pdfDoc.getPages();
   const text = 'LN Educacional';
-  const fontSize = 40;
-  const spacingX = 150;
-  const spacingY = 100;
 
   for (const page of pages) {
     const { width, height } = page.getSize();
-    for (let x = 0; x < width; x += spacingX) {
-      for (let y = 0; y < height; y += spacingY) {
+    for (let x = 0; x < width; x += 150) {
+      for (let y = 0; y < height; y += 100) {
         page.drawText(text, {
           x,
           y,
-          size: fontSize,
+          size: 40,
           color: rgb(0.6, 0.6, 0.6),
           rotate: degrees(-45),
           opacity: 0.35,
@@ -56,109 +53,113 @@ async function addWatermark(pdfPath) {
   fs.writeFileSync(pdfPath, pdfBytes);
 }
 
+// Upload e conversão
 app.post('/upload', upload.array('files'), async (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
   }
 
   const links = [];
+
   try {
     for (const file of req.files) {
       const id = uuidv4();
-      const fileExt = path.extname(file.originalname).toLowerCase();
-      const pdfName = `${id}.pdf`;
-      const pdfPath = path.join(__dirname, 'uploads', pdfName);
+      const ext = path.extname(file.originalname).toLowerCase();
+      const originalPath = file.path;
+      const finalPDFPath = path.join(__dirname, 'uploads', `${id}.pdf`);
+      const allowed = ['.pdf', '.docx', '.doc', '.xls', '.xlsx', '.png', '.jpg', '.jpeg', '.ppt', '.pptx'];
 
-      const allowed = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg'];
-      if (!allowed.includes(fileExt)) {
-        fs.unlinkSync(file.path);
-        return res.status(400).json({ error: 'Formato de arquivo não suportado.' });
+      if (!allowed.includes(ext)) {
+        fs.unlinkSync(originalPath);
+        continue;
       }
 
-      let finalPath = file.path;
-
-      if (fileExt !== '.pdf') {
+      if (ext !== '.pdf') {
+        // CloudConvert Job
         const cloudJob = await axios.post('https://api.cloudconvert.com/v2/jobs', {
           tasks: {
-            'import-my-file': { operation: 'import/upload' },
-            'convert-my-file': {
+            'import-file': { operation: 'import/upload' },
+            'convert-file': {
               operation: 'convert',
-              input: 'import-my-file',
+              input: 'import-file',
               output_format: 'pdf'
             },
-            'export-my-file': { operation: 'export/url', input: 'convert-my-file' }
+            'export-file': { operation: 'export/url', input: 'convert-file' }
           }
         }, {
           headers: {
-            Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}`
           }
         });
 
-        const uploadTask = cloudJob.data.data.tasks.find(t => t.name === 'import-my-file');
+        const uploadTask = cloudJob.data.data.tasks.find(t => t.name === 'import-file');
         const uploadUrl = uploadTask.result.form.url;
         const uploadParams = uploadTask.result.form.parameters;
 
-        const uploadForm = new FormData();
-        for (const key in uploadParams) uploadForm.append(key, uploadParams[key]);
-        uploadForm.append('file', fs.createReadStream(file.path), file.originalname);
+        const form = new FormData();
+        for (const key in uploadParams) {
+          form.append(key, uploadParams[key]);
+        }
+        form.append('file', fs.createReadStream(originalPath));
 
-        await axios.post(uploadUrl, uploadForm, {
-          headers: uploadForm.getHeaders(),
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity
+        await axios.post(uploadUrl, form, {
+          headers: form.getHeaders()
         });
 
         const jobId = cloudJob.data.data.id;
+
+        // Esperar conversão
         let finished = false;
         let exportUrl = null;
+
         while (!finished) {
-          const statusRes = await axios.get(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
-            headers: { Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}` },
+          const status = await axios.get(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
+            headers: { Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}` }
           });
 
-          const job = statusRes.data.data;
-          if (job.status === 'finished') {
-            finished = true;
-            const exportTask = job.tasks.find(t => t.name === 'export-my-file');
-            exportUrl = exportTask.result.files[0].url;
-          } else if (job.status === 'error' || job.status === 'failed') {
-            throw new Error('Erro na conversão do arquivo');
-          }
+          const job = status.data.data;
 
-          if (!finished) await new Promise(r => setTimeout(r, 3000));
+          if (job.status === 'finished') {
+            const exportTask = job.tasks.find(t => t.name === 'export-file');
+            exportUrl = exportTask.result.files[0].url;
+            finished = true;
+          } else if (job.status === 'error') {
+            throw new Error('Erro na conversão via CloudConvert');
+          } else {
+            await new Promise(r => setTimeout(r, 3000));
+          }
         }
 
         const downloadRes = await axios.get(exportUrl, { responseType: 'stream' });
-        const writer = fs.createWriteStream(pdfPath);
+        const writer = fs.createWriteStream(finalPDFPath);
         downloadRes.data.pipe(writer);
         await new Promise((resolve, reject) => {
           writer.on('finish', resolve);
           writer.on('error', reject);
         });
 
-        finalPath = pdfPath;
+        fs.unlinkSync(originalPath); // Remove original
       } else {
-        fs.renameSync(file.path, pdfPath);
-        finalPath = pdfPath;
+        fs.renameSync(originalPath, finalPDFPath);
       }
 
-      await addWatermark(finalPath);
+      await addWatermark(finalPDFPath);
 
-      const { data, error } = await supabase.storage.from(BUCKET).upload(pdfName, fs.readFileSync(finalPath), {
-        contentType: 'application/pdf',
-        upsert: true
-      });
+      const { error: uploadError } = await supabase
+        .storage
+        .from(BUCKET)
+        .upload(`${id}.pdf`, fs.readFileSync(finalPDFPath), {
+          contentType: 'application/pdf',
+          upsert: true
+        });
 
-      if (error) {
-        console.error('❌ Erro ao enviar para o Supabase:', error);
-        return res.status(500).json({ error: 'Erro ao enviar para o Supabase', details: error.message || error });
+      if (uploadError) {
+        throw new Error('Erro ao enviar para o Supabase');
       }
 
-      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(pdfName);
+      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(`${id}.pdf`);
       links.push(urlData.publicUrl);
-
-      fs.unlinkSync(finalPath);
+      fs.unlinkSync(finalPDFPath);
     }
 
     res.json({ success: true, links });
@@ -169,5 +170,5 @@ app.post('/upload', upload.array('files'), async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
