@@ -18,6 +18,7 @@ const FILE_EXPIRATION_HOURS = 6;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use('/file', express.static(UPLOAD_DIR));
 
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR);
@@ -25,7 +26,7 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => cb(null, ${uuidv4()}-${file.originalname})
+  filename: (req, file, cb) => cb(null, `${uuidv4()}-${file.originalname}`)
 });
 
 const upload = multer({ storage });
@@ -68,7 +69,7 @@ function removeOldFiles() {
     const stats = fs.statSync(filePath);
     if ((now - stats.mtimeMs) > maxAge) {
       fs.unlinkSync(filePath);
-      console.log(🧹 Arquivo removido: ${file});
+      console.log(`🧹 Arquivo removido: ${file}`);
     }
   });
 }
@@ -107,7 +108,7 @@ app.post('/upload', upload.array('files'), async (req, res) => {
           }
         }, {
           headers: {
-            Authorization: Bearer ${process.env.CLOUDCONVERT_API_KEY},
+            Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}`,
             'Content-Type': 'application/json'
           }
         });
@@ -129,8 +130,8 @@ app.post('/upload', upload.array('files'), async (req, res) => {
         const jobId = cloudJob.data.data.id;
         let finished = false;
         while (!finished) {
-          const statusRes = await axios.get(https://api.cloudconvert.com/v2/jobs/${jobId}, {
-            headers: { Authorization: Bearer ${process.env.CLOUDCONVERT_API_KEY} },
+          const statusRes = await axios.get(`https://api.cloudconvert.com/v2/jobs/${jobId}`, {
+            headers: { Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}` },
           });
 
           const job = statusRes.data.data;
@@ -145,7 +146,7 @@ app.post('/upload', upload.array('files'), async (req, res) => {
           if (!finished) await new Promise(r => setTimeout(r, 3000));
         }
 
-        const outputPath = path.join(UPLOAD_DIR, ${fileId}.pdf);
+        const outputPath = path.join(UPLOAD_DIR, `${fileId}.pdf`);
         const downloadRes = await axios.get(exportUrl, { responseType: 'stream' });
         const writer = fs.createWriteStream(outputPath);
         downloadRes.data.pipe(writer);
@@ -156,14 +157,14 @@ app.post('/upload', upload.array('files'), async (req, res) => {
 
         finalFilePath = outputPath;
       } else {
-        const outputPath = path.join(UPLOAD_DIR, ${fileId}.pdf);
+        const outputPath = path.join(UPLOAD_DIR, `${fileId}.pdf`);
         fs.renameSync(file.path, outputPath);
         finalFilePath = outputPath;
       }
 
       await addWatermark(finalFilePath);
 
-      const link = https://landingpage-backend-z28u.onrender.com/file/${path.basename(finalFilePath)};
+      const link = `${process.env.BASE_URL}/file/${path.basename(finalFilePath)}`;
       links.push(link);
     }
 
@@ -175,8 +176,6 @@ app.post('/upload', upload.array('files'), async (req, res) => {
   }
 });
 
-app.use('/file', express.static(UPLOAD_DIR));
-
 app.listen(PORT, () => {
-  console.log(🚀 Servidor rodando em http://localhost:${PORT});
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
