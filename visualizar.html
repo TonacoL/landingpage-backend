@@ -101,7 +101,8 @@
     const scale = 1.5;
 
     function getQueryParam(param) {
-      return new URLSearchParams(window.location.search).get(param);
+      const params = new URLSearchParams(window.location.search);
+      return params.get(param);
     }
 
     async function renderPage(num) {
@@ -118,14 +119,13 @@
       nextBtn.disabled = (num >= totalPages);
     }
 
-    async function loadPDF(url) {
+    async function loadPDF(pdfUrl) {
       try {
-        const decodedURL = decodeURIComponent(url);
-        if (!decodedURL.startsWith('http')) {
-          throw new Error("Link inválido ou malformado.");
+        if (!pdfUrl || !pdfUrl.startsWith('http')) {
+          throw new Error("Link do PDF inválido.");
         }
 
-        pdfDoc = await pdfjsLib.getDocument(decodedURL).promise;
+        pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
         totalPages = pdfDoc.numPages;
         currentPage = 1;
         await renderPage(currentPage);
@@ -138,7 +138,7 @@
     prevBtn.onclick = () => currentPage > 1 && renderPage(--currentPage);
     nextBtn.onclick = () => currentPage < totalPages && renderPage(++currentPage);
 
-    // Prevenir ações de cópia ou salvamento
+    // Proteção contra cópia
     canvas.oncontextmenu = e => e.preventDefault();
     canvas.ondragstart = e => e.preventDefault();
     document.addEventListener('keydown', e => {
@@ -149,9 +149,9 @@
 
     const pdfUrl = getQueryParam('pdf');
     if (pdfUrl) {
-      loadPDF(pdfUrl);
+      loadPDF(decodeURIComponent(pdfUrl));
     } else {
-      alert('PDF não encontrado. Verifique o link gerado.');
+      alert('PDF não encontrado. Verifique se o link está correto.');
     }
   </script>
 </body>
