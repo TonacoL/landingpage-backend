@@ -19,15 +19,19 @@
       padding: 1em 2em;
       text-align: center;
     }
-    header h1 { margin: 0; font-size: 1.8em; }
-    header p { margin: 0.5em 0 0; font-size: 1em; }
-
+    header h1 {
+      margin: 0;
+      font-size: 1.8em;
+    }
+    header p {
+      margin: 0.5em 0 0;
+      font-size: 1em;
+    }
     main {
       max-width: 900px;
       margin: auto;
       padding: 2em;
     }
-
     .info-box {
       background: #e9f0ff;
       padding: 1.5em;
@@ -35,16 +39,16 @@
       margin-bottom: 2em;
       border-left: 5px solid #3c4bd3;
     }
-
-    .info-box h3 { color: #3c4bd3; margin-top: 0; }
-
+    .info-box h3 {
+      color: #3c4bd3;
+      margin-top: 0;
+    }
     .features {
       display: flex;
       gap: 1em;
       margin-bottom: 2em;
       flex-wrap: wrap;
     }
-
     .feature {
       flex: 1;
       min-width: 200px;
@@ -54,7 +58,6 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
-
     .upload-area {
       background: #ffffff;
       border: 2px dashed #3c4bd3;
@@ -63,11 +66,13 @@
       border-radius: 10px;
       cursor: pointer;
     }
-
-    .upload-area:hover { background: #f0f4ff; }
-
-    .progress-section { margin-top: 2em; text-align: center; }
-
+    .upload-area:hover {
+      background: #f0f4ff;
+    }
+    .progress-section {
+      margin-top: 2em;
+      text-align: center;
+    }
     .progress-bar {
       height: 10px;
       width: 100%;
@@ -76,33 +81,28 @@
       overflow: hidden;
       margin: 1em 0;
     }
-
     .progress-bar-fill {
       height: 100%;
       width: 0;
       background: linear-gradient(to right, #3c4bd3, #8b24c6);
       transition: width 0.5s ease;
     }
-
     .steps {
       display: flex;
       justify-content: space-between;
       font-size: 0.9em;
       color: #666;
     }
-
     .response {
       margin-top: 1em;
       padding: 1em;
       display: none;
       border-radius: 5px;
     }
-
     .response.success {
       background: #d4edda;
       color: #155724;
     }
-
     .response.error {
       background: #f8d7da;
       color: #721c24;
@@ -114,7 +114,6 @@
     <h1>LN Educacional</h1>
     <p>Sistema Avançado de Proteção de Documentos</p>
   </header>
-
   <main>
     <div class="info-box">
       <h3>🔐 Como funciona:</h3>
@@ -145,7 +144,7 @@
 
     <div class="upload-area" id="dropArea">
       <p>Arraste seu arquivo aqui ou clique para selecionar</p>
-      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.odt,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.png,.jpg,.jpeg,.bmp,.gif,.txt,.rtf,.html,.csv,.svg" hidden />
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx" hidden />
     </div>
 
     <div class="progress-section">
@@ -200,7 +199,7 @@
       progressFill.style.width = '10%';
 
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      formData.append('files', selectedFile);
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', 'https://landingpage-backend-z28u.onrender.com/upload');
@@ -213,30 +212,24 @@
       };
 
       xhr.onload = function() {
-        try {
+        if (xhr.status === 200) {
           const data = JSON.parse(xhr.responseText);
-          console.log('🔗 Resposta:', data);
-
-          if (xhr.status === 200 && data.links && Array.isArray(data.links) && data.links.length > 0) {
-            const link = data.links[0];
+          if (data.links && Array.isArray(data.links)) {
             progressFill.style.width = '100%';
             showMessage('Documento protegido com sucesso! Redirecionando...', 'success');
             setTimeout(() => {
-              window.location.href = `visualizar.html?pdf=${encodeURIComponent(link)}`;
+              window.location.href = 'visualizar.html?pdf=' + encodeURIComponent(data.links[0]);
             }, 2000);
           } else {
-            throw new Error("⚠️ Nenhum link retornado.");
+            showMessage('Erro: resposta inesperada do servidor.', 'error');
           }
-        } catch (err) {
-          console.error(err);
-          progressFill.style.width = '0%';
-          showMessage('❌ Erro no envio: ' + err.message, 'error');
+        } else {
+          showMessage('Erro no envio. Por favor, tente novamente.', 'error');
         }
       };
 
       xhr.onerror = function() {
-        progressFill.style.width = '0%';
-        showMessage('❌ Falha na conexão com o servidor.', 'error');
+        showMessage('Falha na conexão com o servidor.', 'error');
       };
 
       xhr.send(formData);
