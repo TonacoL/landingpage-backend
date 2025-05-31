@@ -3,155 +3,243 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visualização Segura</title>
+  <title>LN Educacional - Proteção de Documentos</title>
   <style>
     * { box-sizing: border-box; }
     body {
-      background-color: #121212;
-      color: #fff;
+      background: #f8f9fc;
       font-family: Arial, sans-serif;
-      text-align: center;
       margin: 0;
-      padding: 2em 1em;
-      user-select: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 0;
+      color: #333;
     }
-    h1 {
-      color: #66b2ff;
-      margin-bottom: 1em;
-      font-size: 1.5em;
+    header {
+      background: #3c4bd3;
+      color: white;
+      padding: 1em 2em;
+      text-align: center;
     }
-    #pdfViewer {
-      background: #1e1e1e;
+    header h1 { margin: 0; font-size: 1.8em; }
+    header p { margin: 0.5em 0 0; font-size: 1em; }
+
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 2em;
+    }
+
+    .info-box {
+      background: #e9f0ff;
+      padding: 1.5em;
       border-radius: 10px;
-      padding: 1em;
-      max-width: 100%;
-      width: 90vw;
-      max-height: 85vh;
-      overflow: auto;
-      box-shadow: 0 0 15px rgba(0, 123, 255, 0.4);
+      margin-bottom: 2em;
+      border-left: 5px solid #3c4bd3;
     }
-    canvas {
-      display: block;
-      margin: 0 auto 1em;
-      border: 1px solid #666;
-      max-width: 100%;
-      height: auto;
-    }
-    #navigation {
-      margin-bottom: 1em;
+
+    .info-box h3 { color: #3c4bd3; margin-top: 0; }
+
+    .features {
       display: flex;
-      justify-content: center;
-      align-items: center;
       gap: 1em;
+      margin-bottom: 2em;
       flex-wrap: wrap;
     }
-    #navigation button {
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      padding: 0.5em 1em;
-      font-size: 1em;
+
+    .feature {
+      flex: 1;
+      min-width: 200px;
+      background: white;
+      padding: 1em;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .upload-area {
+      background: #ffffff;
+      border: 2px dashed #3c4bd3;
+      padding: 2em;
+      text-align: center;
+      border-radius: 10px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
-    #navigation button:hover:not(:disabled) {
-      background-color: #0056b3;
+
+    .upload-area:hover { background: #f0f4ff; }
+
+    .progress-section { margin-top: 2em; text-align: center; }
+
+    .progress-bar {
+      height: 10px;
+      width: 100%;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1em 0;
     }
-    #navigation button:disabled {
-      background-color: #444;
-      opacity: 0.6;
-      cursor: not-allowed;
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(to right, #3c4bd3, #8b24c6);
+      transition: width 0.5s ease;
     }
-    #navigation span {
-      font-size: 0.95em;
-      color: #ccc;
+
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .response {
+      margin-top: 1em;
+      padding: 1em;
+      display: none;
+      border-radius: 5px;
+    }
+
+    .response.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .response.error {
+      background: #f8d7da;
+      color: #721c24;
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
 </head>
 <body>
-  <h1>Visualização Protegida</h1>
-  <div id="pdfViewer">
-    <div id="navigation">
-      <button id="prevPage" disabled>⬅ Anterior</button>
-      <span>Página <span id="pageNum">0</span> de <span id="pageCount">0</span></span>
-      <button id="nextPage" disabled>Próxima ➡</button>
+  <header>
+    <h1>LN Educacional</h1>
+    <p>Sistema Avançado de Proteção de Documentos</p>
+  </header>
+
+  <main>
+    <div class="info-box">
+      <h3>🔐 Como funciona:</h3>
+      <ul>
+        <li><strong>Proteção completa:</strong> Cada página do documento é convertida em imagem com marca d'água.</li>
+        <li><strong>Garantia de originalidade:</strong> Marcas d'água variam em posição, tamanho e ângulo.</li>
+        <li><strong>Acesso simplificado:</strong> Compartilhe o link gerado para visualização segura.</li>
+      </ul>
     </div>
-    <canvas id="pdfCanvas"></canvas>
-  </div>
+
+    <div class="features">
+      <div class="feature">
+        <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="40" alt="Conversão">
+        <h4>Conversão Segura</h4>
+        <p>Documentos convertidos em imagens protegidas</p>
+      </div>
+      <div class="feature">
+        <img src="https://cdn-icons-png.flaticon.com/512/709/709496.png" width="40" alt="Visualização">
+        <h4>Visualização Segura</h4>
+        <p>Conteúdo legível mas não reutilizável</p>
+      </div>
+      <div class="feature">
+        <img src="https://cdn-icons-png.flaticon.com/512/1077/1077035.png" width="40" alt="Link">
+        <h4>Link Exclusivo</h4>
+        <p>Compartilhamento fácil e controlado</p>
+      </div>
+    </div>
+
+    <div class="upload-area" id="dropArea">
+      <p>Arraste seu arquivo aqui ou clique para selecionar</p>
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.odt,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.png,.jpg,.jpeg,.bmp,.gif,.txt,.rtf,.html,.csv,.svg" hidden />
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-bar">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="steps">
+        <span>1 Análise</span>
+        <span>2 Conversão</span>
+        <span>3 Proteção</span>
+        <span>4 Finalização</span>
+      </div>
+    </div>
+
+    <div class="response" id="responseMsg"></div>
+  </main>
 
   <script>
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const progressFill = document.getElementById('progressFill');
+    const responseMsg = document.getElementById('responseMsg');
+    let selectedFile = null;
 
-    const canvas = document.getElementById('pdfCanvas');
-    const ctx = canvas.getContext('2d');
-    const pageNumElem = document.getElementById('pageNum');
-    const pageCountElem = document.getElementById('pageCount');
-    const prevBtn = document.getElementById('prevPage');
-    const nextBtn = document.getElementById('nextPage');
-
-    let pdfDoc = null;
-    let currentPage = 1;
-    let totalPages = 0;
-    const scale = 1.5;
-
-    function getQueryParam(param) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(param);
-    }
-
-    async function renderPage(num) {
-      const page = await pdfDoc.getPage(num);
-      const viewport = page.getViewport({ scale });
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      await page.render({ canvasContext: ctx, viewport }).promise;
-
-      pageNumElem.textContent = num;
-      pageCountElem.textContent = totalPages;
-      prevBtn.disabled = (num <= 1);
-      nextBtn.disabled = (num >= totalPages);
-    }
-
-    async function loadPDF(pdfUrl) {
-      try {
-        if (!pdfUrl || !pdfUrl.startsWith('http')) {
-          throw new Error("Link do PDF inválido.");
-        }
-
-        pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
-        totalPages = pdfDoc.numPages;
-        currentPage = 1;
-        await renderPage(currentPage);
-      } catch (error) {
-        alert('Erro ao carregar o PDF. Verifique se o link está correto e se o arquivo ainda está disponível.');
-        console.error(error);
-      }
-    }
-
-    prevBtn.onclick = () => currentPage > 1 && renderPage(--currentPage);
-    nextBtn.onclick = () => currentPage < totalPages && renderPage(++currentPage);
-
-    // Proteção contra cópia
-    canvas.oncontextmenu = e => e.preventDefault();
-    canvas.ondragstart = e => e.preventDefault();
-    document.addEventListener('keydown', e => {
-      if ((e.ctrlKey || e.metaKey) && ['c', 'p', 's', 'u'].includes(e.key.toLowerCase())) {
-        e.preventDefault();
-      }
+    dropArea.addEventListener('click', () => fileInput.click());
+    dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.background = '#f0f4ff'; });
+    dropArea.addEventListener('dragleave', () => dropArea.style.background = '#fff');
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault();
+      dropArea.style.background = '#fff';
+      selectedFile = e.dataTransfer.files[0];
+      uploadFile();
+    });
+    fileInput.addEventListener('change', () => {
+      selectedFile = fileInput.files[0];
+      uploadFile();
     });
 
-    const pdfUrl = getQueryParam('pdf');
-    if (pdfUrl) {
-      loadPDF(decodeURIComponent(pdfUrl));
-    } else {
-      alert('PDF não encontrado. Verifique se o link está correto.');
+    function showMessage(text, type) {
+      responseMsg.className = 'response ' + type;
+      responseMsg.textContent = text;
+      responseMsg.style.display = 'block';
+    }
+
+    function uploadFile() {
+      if (!selectedFile) {
+        showMessage('Nenhum arquivo selecionado.', 'error');
+        return;
+      }
+
+      showMessage('Processando seu documento...', 'success');
+      progressFill.style.width = '10%';
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://landingpage-backend-z28u.onrender.com/upload');
+
+      xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+          const percent = Math.min(80, (e.loaded / e.total) * 80);
+          progressFill.style.width = percent + '%';
+        }
+      };
+
+      xhr.onload = function() {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          console.log('🔗 Resposta:', data);
+
+          if (xhr.status === 200 && data.links && Array.isArray(data.links) && data.links.length > 0) {
+            const link = data.links[0];
+            progressFill.style.width = '100%';
+            showMessage('Documento protegido com sucesso! Redirecionando...', 'success');
+            setTimeout(() => {
+              window.location.href = `visualizar.html?pdf=${encodeURIComponent(link)}`;
+            }, 2000);
+          } else {
+            throw new Error("⚠️ Nenhum link retornado.");
+          }
+        } catch (err) {
+          console.error(err);
+          progressFill.style.width = '0%';
+          showMessage('❌ Erro no envio: ' + err.message, 'error');
+        }
+      };
+
+      xhr.onerror = function() {
+        progressFill.style.width = '0%';
+        showMessage('❌ Falha na conexão com o servidor.', 'error');
+      };
+
+      xhr.send(formData);
     }
   </script>
 </body>
